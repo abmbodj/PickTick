@@ -26,3 +26,5 @@ const statuses = await Promise.all(
 const tally = new Map<number, number>();
 for (const s of statuses) tally.set(s, (tally.get(s) ?? 0) + 1);
 console.log([...tally].sort(([a], [b]) => a - b).map(([s, c]) => `${s}: ${c}`).join(', '));
+
+export {};
