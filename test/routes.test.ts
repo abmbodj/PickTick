@@ -191,3 +191,10 @@ test('reset needs the secret, and frees held seats', async () => {
   expect((await reset('test-secret')).status).toBe(204);
   expect((await hold(b, SEAT, 'ben')).status).toBe(200);
 });
+
+test('live: a first-time visitor with no cookie still gets a socket', async () => {
+  const res = await get('/api/events/hot/live', { headers: { upgrade: 'websocket' } });
+  expect(res.status).toBe(101);
+  res.webSocket!.accept();
+  res.webSocket!.close();
+});

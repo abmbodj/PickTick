@@ -11,7 +11,7 @@ export const identity = createMiddleware<{ Bindings: Env; Variables: { uid: stri
       uid = crypto.randomUUID();
       setCookie(c, 'uid', uid, {
         httpOnly: true,
-        secure: true,
+        secure: new URL(c.req.url).protocol === 'https:', // plain http only on localhost
         sameSite: 'Lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
