@@ -11,8 +11,7 @@
     {
       "binding": "DB",
       "database_name": "picktick",
-      // Replaced with the real id after `wrangler d1 create picktick` (see README).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "7b4b23ec-0b5c-49d0-a7d6-81b76030aa34",
       "migrations_dir": "migrations"
     }
   ],

@@ -1,6 +1,6 @@
 # PickTick: spec
 
-Status: draft, awaiting approval. Nothing is built yet.
+Status: approved and built. Live at https://picktick.pmbodj49.workers.dev
 Date: 2026-11-11
 
 ## 1. Intent
@@ -160,7 +160,7 @@ Reset:
 | `GET /api/events/:id/live` | WebSocket upgrade: snapshot, then seat and counter updates |
 | `POST /api/events/:id/holds` `{seatId, nickname}` | Hold a seat. `409` if taken, `422` if over the limit |
 | `DELETE /api/events/:id/holds/:seatId` | Release your own hold |
-| `POST /api/events/:id/bookings` | Confirm your live holds. `410` if expired |
+| `POST /api/events/:id/bookings` `{bookingId, nickname}` | Confirm your live holds. The browser makes one `bookingId` per checkout, so paying twice is one booking. `410` if expired |
 | `GET /api/events/:id/bookings/:bookingId` | Booking for the confirmation page, owner only |
 | `POST /api/admin/reset` | Reset demo state; requires secret |
 

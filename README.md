@@ -1,7 +1,7 @@
 # PickTick
 
 A Ticketmaster-style class demo on Cloudflare Workers. No real tickets, no real money.
-What it does and why: [SPEC.md](SPEC.md).
+Live at https://picktick.pmbodj49.workers.dev. What it does and why: [SPEC.md](SPEC.md).
 
 | Do this | Command |
 |---|---|
@@ -13,7 +13,10 @@ What it does and why: [SPEC.md](SPEC.md).
 | Reset every seat | `curl -X POST <url>/api/admin/reset -H "x-reset-secret: <secret>"` |
 | Regenerate seed data after editing `scripts/make-seed.ts` | `npm run seed` |
 
-The local reset secret is in `.dev.vars` (`dev-secret` by default).
+The local reset secret is in `.dev.vars` (create it with `RESET_SECRET=dev-secret`). The live
+site's secret is in `.reset-secret`; both files are gitignored.
+
+Reset the live site: `curl -X POST https://picktick.pmbodj49.workers.dev/api/admin/reset -H "x-reset-secret: $(cat .reset-secret)"`
 
 ## Deploy
 
