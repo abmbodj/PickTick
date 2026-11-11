@@ -70,3 +70,26 @@ test('msLeft follows the server clock when the client clock is 5 minutes ahead',
   expect(msLeft(s, clientNow + 30_000)).toBe(90_000);
   expect(msLeft(s, clientNow + 500_000)).toBe(0);
 });
+
+test('seats freed by the server after the deadline are flagged as expired', () => {
+  let s = applyMessage(null, snapshot(), 1_000);
+  s = applyHold(s, 'a', 9_000);
+  expect(s.expiredAt).toBeNull();
+  s = applyMessage(s, { type: 'seats', seats: [seat('a')], stats, now: 9_050 }, 9_050);
+  expect(s.mine.seatIds).toEqual([]);
+  expect(s.expiredAt).toBe(9_050);
+});
+
+test('releasing or selling before the deadline is not flagged as expired', () => {
+  let s = applyMessage(null, snapshot(), 1_000);
+  s = applyHold(s, 'a', 9_000);
+  s = applyMessage(s, { type: 'seats', seats: [seat('a', 'sold', 'me')], stats, now: 2_000 }, 2_000);
+  expect(s.expiredAt).toBeNull();
+});
+
+test('a reconnect snapshot after the deadline with holds gone is flagged as expired', () => {
+  let s = applyMessage(null, snapshot(), 1_000);
+  s = applyHold(s, 'a', 9_000);
+  s = applyMessage(s, snapshot({ now: 60_000 }), 60_000);
+  expect(s.expiredAt).toBe(60_000);
+});

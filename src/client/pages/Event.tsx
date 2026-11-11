@@ -29,7 +29,7 @@ export default function Event() {
   const navigate = useNavigate();
   const event = useQuery({ queryKey: ['event', id], queryFn: () => getEvent(id) });
   // Connect after the event has loaded, so the identity cookie already exists.
-  const room = useEventRoom(id, event.isSuccess);
+  const room = useEventRoom(id, event.data !== undefined);
 
   const [nickname, setNickname] = useState(() => localStorage.getItem(NAME_KEY) ?? '');
   const nameInput = useRef<HTMLInputElement>(null);
@@ -49,13 +49,23 @@ export default function Event() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  // The hold can run out two ways: this device's countdown reaches zero, or the
+  // server takes the seats back first. Either way, say what happened.
+  const EXPIRED: Notice = {
+    kind: 'error',
+    text: 'Your hold ran out, so those seats are back on sale. Pick again.',
+  };
   useEffect(() => {
     if (left !== 0 || mine.length === 0) return;
     room.released(mine);
-    setNotice({ kind: 'error', text: 'Your hold ran out, so those seats are back on sale. Pick again.' });
+    setNotice(EXPIRED);
   }, [left]); // eslint-disable-line react-hooks/exhaustive-deps
+  const expiredAt = room.state?.expiredAt ?? null;
+  useEffect(() => {
+    if (expiredAt !== null) setNotice(EXPIRED);
+  }, [expiredAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (event.isPending)
+  if (!event.data && event.isPending)
     return (
       <main className="animate-pulse py-8" aria-busy="true" aria-label="Loading event">
         <div className="h-8 w-2/3 rounded bg-surface" />
@@ -63,7 +73,7 @@ export default function Event() {
         <div className="mt-6 h-72 rounded-lg bg-surface" />
       </main>
     );
-  if (event.isError)
+  if (!event.data)
     return (
       <main className="py-16">
         <h1 className="text-2xl font-bold">
@@ -82,6 +92,10 @@ export default function Event() {
 
   async function onSeat(seatId: string) {
     if (busy) return;
+    if (!room.state) {
+      setNotice({ kind: 'info', text: 'Still connecting to the live seat map. Try again in a moment.' });
+      return;
+    }
     if (mine.includes(seatId)) return release(seatId);
     if (!name) {
       nameInput.current?.focus();

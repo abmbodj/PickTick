@@ -149,3 +149,15 @@ test('reset returns every seat to available and stats to zero', async () => {
   expect(snap.seats.every((s) => s.status === 'available')).toBe(true);
   expect(snap.stats).toEqual({ granted: 0, rejected: 0, expired: 0, sold: 0 });
 });
+
+test('a failed catalog read on first use does not poison the room', async () => {
+  const r = room();
+  await runInDurableObject(r, async (instance) => {
+    const inst = instance as unknown as { env: { DB: unknown }; hold: (e: string, u: User, s: string) => Promise<unknown> };
+    const realDb = inst.env.DB;
+    inst.env = { ...inst.env, DB: { prepare: () => { throw new Error('D1 is down'); } } };
+    await expect(inst.hold('hot', user('ana'), SEAT)).rejects.toThrow('D1 is down');
+    inst.env = { ...inst.env, DB: realDb };
+  });
+  expect(await r.hold('hot', user('ana'), SEAT)).toMatchObject({ ok: true });
+});

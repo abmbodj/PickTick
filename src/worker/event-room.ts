@@ -29,10 +29,17 @@ export class EventRoom extends DurableObject<Env> {
   // Creates this event's tables and seats on first use. Returns false, and
   // writes nothing, when the event is not in the catalog.
   private ensureSeats(eventId: string): Promise<boolean> {
-    this.ready ??= this.init(eventId).then((ok) => {
-      if (!ok) this.ready = null;
-      return ok;
-    });
+    // A missing event or a failed catalog read is not cached, so the next request retries.
+    this.ready ??= this.init(eventId).then(
+      (ok) => {
+        if (!ok) this.ready = null;
+        return ok;
+      },
+      (err) => {
+        this.ready = null;
+        throw err;
+      },
+    );
     return this.ready;
   }
 

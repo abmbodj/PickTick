@@ -47,7 +47,11 @@ export function useEventRoom(eventId: string, enabled: boolean) {
       };
     };
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && ws && ws.readyState > WebSocket.OPEN) connect();
+      // A socket can still read OPEN after a phone sleeps while being dead, so
+      // always start a new one; its snapshot replaces whatever went stale.
+      if (document.visibilityState !== 'visible' || ws?.readyState === WebSocket.CONNECTING) return;
+      ws?.close();
+      connect();
     };
 
     connect();

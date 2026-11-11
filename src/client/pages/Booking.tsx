@@ -12,14 +12,14 @@ export default function Booking() {
     retry: false,
   });
 
-  if (event.isPending || booking.isPending)
+  if ((!event.data && event.isPending) || (!booking.data && booking.isPending))
     return (
       <main className="animate-pulse py-8" aria-busy="true" aria-label="Loading booking">
         <div className="h-8 w-1/2 rounded bg-surface" />
         <div className="mt-6 h-40 max-w-md rounded-lg bg-surface" />
       </main>
     );
-  if (event.isError || booking.isError)
+  if (!event.data || !booking.data)
     return (
       <main className="py-16">
         <h1 className="text-2xl font-bold">That booking is not available.</h1>
