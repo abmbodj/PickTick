@@ -5,6 +5,7 @@ import {
   type Booking,
   type ConfirmResult,
   type HoldResult,
+  type RoomMessage,
   type SeatView,
   type Snapshot,
   type Stats,
@@ -133,7 +134,7 @@ export class EventRoom extends DurableObject<Env> {
   async snapshot(eventId: string, userId: string): Promise<Snapshot | null> {
     if (!(await this.ensureSeats(eventId))) return null;
     const now = Date.now();
-    this.purgeExpired(now);
+    this.broadcast(this.purgeExpired(now));
     const mine = this.holdsOf(userId);
     return {
       seats: this.seatViews(),
@@ -147,7 +148,15 @@ export class EventRoom extends DurableObject<Env> {
     if (!(await this.ensureSeats(eventId))) return null;
     // No awaits below this line: the check and the write are one uninterrupted step.
     const now = Date.now();
-    this.purgeExpired(now);
+    const freed = this.purgeExpired(now);
+    const result = this.tryHold(user, seatId, now);
+    // Rejections are broadcast too, so everyone sees the conflict counter move.
+    this.broadcast([...freed, seatId]);
+    if (result.ok) await this.armAlarm();
+    return result;
+  }
+
+  private tryHold(user: User, seatId: string, now: number): HoldResult {
     const [seat] = this.sql
       .exec<{ booking_id: string | null }>('SELECT booking_id FROM seat WHERE id = ?', seatId)
       .toArray();
@@ -181,10 +190,12 @@ export class EventRoom extends DurableObject<Env> {
 
   async release(eventId: string, userId: string, seatId: string): Promise<boolean> {
     if (!(await this.ensureSeats(eventId))) return false;
-    this.purgeExpired(Date.now());
-    return (
-      this.sql.exec('DELETE FROM hold WHERE seat_id = ? AND user_id = ?', seatId, userId).rowsWritten > 0
-    );
+    const freed = this.purgeExpired(Date.now());
+    const released =
+      this.sql.exec('DELETE FROM hold WHERE seat_id = ? AND user_id = ?', seatId, userId).rowsWritten > 0;
+    this.broadcast(released ? [...freed, seatId] : freed);
+    await this.armAlarm();
+    return released;
   }
 
   async confirm(eventId: string, user: User, bookingId: string): Promise<ConfirmResult | null> {
@@ -196,9 +207,12 @@ export class EventRoom extends DurableObject<Env> {
         : { ok: false, reason: 'expired' };
 
     const now = Date.now();
-    this.purgeExpired(now);
+    const freed = this.purgeExpired(now);
     const mine = this.holdsOf(user.id);
-    if (mine.length === 0) return { ok: false, reason: 'expired' };
+    if (mine.length === 0) {
+      this.broadcast(freed);
+      return { ok: false, reason: 'expired' };
+    }
 
     this.ctx.storage.transactionSync(() => {
       const ids = mine.map((h) => h.seat_id);
@@ -218,6 +232,8 @@ export class EventRoom extends DurableObject<Env> {
       this.sql.exec('DELETE FROM hold WHERE user_id = ?', user.id);
       this.bump('sold', ids.length);
     });
+    this.broadcast([...freed, ...mine.map((h) => h.seat_id)]);
+    await this.armAlarm();
     return { ok: true, booking: this.bookingRow(bookingId)!.booking };
   }
 
@@ -239,5 +255,61 @@ export class EventRoom extends DurableObject<Env> {
       DELETE FROM booking;
       UPDATE stats SET granted = 0, rejected = 0, expired = 0, sold = 0 WHERE id = 1;
     `);
+    this.send({ type: 'seats', seats: this.seatViews(), stats: this.stats(), now: Date.now() });
+    await this.armAlarm();
+  }
+
+  // ---- live updates ----
+
+  private send(message: RoomMessage) {
+    const text = JSON.stringify(message);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.send(text);
+      } catch {
+        // A socket that is already closing just misses this update.
+      }
+    }
+  }
+
+  private broadcast(seatIds: string[]) {
+    if (seatIds.length === 0) return;
+    this.send({
+      type: 'seats',
+      seats: this.seatViews([...new Set(seatIds)]),
+      stats: this.stats(),
+      now: Date.now(),
+    });
+  }
+
+  // Wakes the room at the next deadline so expired seats are pushed to viewers.
+  // Correctness never depends on this: an expired hold is already ignored.
+  private async armAlarm() {
+    const { next } = this.sql
+      .exec<{ next: number | null }>('SELECT min(expires_at) AS next FROM hold')
+      .one();
+    if (next === null) await this.ctx.storage.deleteAlarm();
+    else await this.ctx.storage.setAlarm(next);
+  }
+
+  async alarm() {
+    this.broadcast(this.purgeExpired(Date.now()));
+    await this.armAlarm();
+  }
+
+  // WebSocket upgrade, forwarded by the Worker with the caller's id attached.
+  async fetch(request: Request): Promise<Response> {
+    const eventId = request.headers.get('x-event-id') ?? '';
+    const userId = request.headers.get('x-uid') ?? '';
+    const snapshot = await this.snapshot(eventId, userId);
+    if (!snapshot) return Response.json({ error: 'Event not found' }, { status: 404 });
+    const { 0: client, 1: server } = new WebSocketPair();
+    this.ctx.acceptWebSocket(server);
+    server.send(JSON.stringify({ type: 'snapshot', ...snapshot } satisfies RoomMessage));
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  webSocketClose(ws: WebSocket) {
+    ws.close();
   }
 }

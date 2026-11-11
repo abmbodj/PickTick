@@ -58,3 +58,8 @@ export async function getEvent(d1: D1Database, id: string): Promise<EventDetail 
   const { seatMapJson, ...rest } = row;
   return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap };
 }
+
+export async function listEventIds(d1: D1Database): Promise<string[]> {
+  const rows = await drizzle(d1).select({ id: event.id }).from(event);
+  return rows.map((r) => r.id);
+}
