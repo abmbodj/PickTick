@@ -23,11 +23,15 @@ export type EventSummary = {
   source: 'picktick' | 'ticketmaster';
   imageUrl: string | null;
 };
+export const PAGE_SIZE = 20;
+export const MAX_PAGES = 50; // the Ticketmaster API stops at 1000 results
+export type SearchPage = { events: EventSummary[]; page: number; totalPages: number };
 export type EventDetail = EventSummary & {
   description: string;
   performerBlurb: string;
   seatMap: SeatMap;
   externalUrl: string | null; // where real tickets are sold, for Ticketmaster events
+  seatmapUrl: string | null; // the venue's own seating chart image, when Ticketmaster has one
 };
 
 export type SeatStatus = 'available' | 'held' | 'sold';

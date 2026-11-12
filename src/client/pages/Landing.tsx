@@ -48,11 +48,11 @@ export default function Landing() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const upcoming = useQuery({
-    queryKey: ['search', { q: '', type: '', from: '', to: '' }],
+    queryKey: ['search', { q: '', type: '', from: '', to: '' }, 0],
     queryFn: () => searchEvents({ q: '', type: '', from: '', to: '' }),
   });
   // Lead with events that have a picture, then fill with the soonest.
-  const featured = [...(upcoming.data ?? [])]
+  const featured = [...(upcoming.data?.events ?? [])]
     .sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)))
     .slice(0, 6);
 

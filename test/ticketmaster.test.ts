@@ -19,6 +19,7 @@ const tmEvent = (over: Record<string, unknown> = {}) => ({
   dates: { start: { localDate: '2027-01-15', localTime: '19:30:00', dateTime: '2027-01-16T01:30:00Z' } },
   classifications: [{ segment: { name: 'Music' }, genre: { name: 'Pop' } }],
   priceRanges: [{ type: 'standard', currency: 'USD', min: 49.5, max: 199 }],
+  seatmap: { staticUrl: 'https://maps.ticketmaster.com/maps/geometry/3/event/x/staticImage' },
   _embedded: {
     venues: [{ name: 'United Center', city: { name: 'Chicago' }, state: { stateCode: 'IL' } }],
     attractions: [{ name: 'Nova Lights' }],
@@ -42,15 +43,15 @@ afterEach(() => vi.restoreAllMocks());
 
 test('with no API key, search returns only own events and never calls out', async () => {
   const calls = stubApi(() => page([tmEvent()]));
-  const hits = await searchEvents(noKey, { q: 'no-key-case' });
+  const hits = (await searchEvents(noKey, { q: 'no-key-case' })).events;
   expect(hits).toEqual([]);
-  const all = await searchEvents(noKey, {});
+  const all = (await searchEvents(noKey, {})).events;
   expect(all).toHaveLength(9);
   expect(all.every((e) => e.source === 'picktick' && e.imageUrl === null)).toBe(true);
   expect(calls).toEqual([]);
 });
 
-test('with a key, search merges both sources by date and maps fields', async () => {
+test('with a key, search lists own events then API events, and maps fields', async () => {
   const calls = stubApi(() =>
     page([
       tmEvent(),
@@ -58,10 +59,10 @@ test('with a key, search merges both sources by date and maps fields', async () 
       tmEvent({ id: 'late', name: 'Later Show', dates: { start: { localDate: '2027-12-31' } } }),
     ]),
   );
-  const hits = await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-31' });
+  const hits = (await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-31' })).events;
   expect(hits).toHaveLength(11); // 9 own + 2 dated
-  expect(hits.map((e) => e.startsAt)).toEqual(hits.map((e) => e.startsAt).sort());
-  expect(hits[0]).toEqual<EventSummary>({
+  expect(hits.slice(0, 9).every((e) => e.source === 'picktick')).toBe(true);
+  expect(hits[9]).toEqual<EventSummary>({
     id: 'tm-Z7r9jZ1Ad0',
     name: 'Nova Lights: World Tour',
     type: 'concert',
@@ -78,7 +79,7 @@ test('with a key, search merges both sources by date and maps fields', async () 
 
 test('search sends the key, keyword, mapped type and date range', async () => {
   const calls = stubApi(() => page([]));
-  await searchEvents(withKey, { q: 'param check', type: 'theater', from: '2027-03-01', to: '2027-03-31' });
+  (await searchEvents(withKey, { q: 'param check', type: 'theater', from: '2027-03-01', to: '2027-03-31' })).events;
   const url = new URL(calls[0]);
   expect(url.origin + url.pathname).toBe('https://app.ticketmaster.com/discovery/v2/events.json');
   expect(Object.fromEntries(url.searchParams)).toMatchObject({
@@ -92,33 +93,33 @@ test('search sends the key, keyword, mapped type and date range', async () => {
     sort: 'date,asc',
   });
   calls.length = 0;
-  await searchEvents(withKey, { q: 'comedy check', type: 'comedy' });
+  (await searchEvents(withKey, { q: 'comedy check', type: 'comedy' })).events;
   expect(new URL(calls[0]).searchParams.get('classificationName')).toBe('Comedy');
 });
 
 test('a repeated search is served from cache', async () => {
   const calls = stubApi(() => page([tmEvent()]));
-  await searchEvents(withKey, { q: 'cache check' });
-  await searchEvents(withKey, { q: 'cache check' });
+  (await searchEvents(withKey, { q: 'cache check' })).events;
+  (await searchEvents(withKey, { q: 'cache check' })).events;
   expect(calls).toHaveLength(1);
 });
 
 test('a failing, rate-limited or malformed API gives own events only', async () => {
   stubApi(() => new Response('{"fault":{}}', { status: 429 }));
-  expect(await searchEvents(withKey, { q: 'herons rate limited' })).toEqual([]);
-  expect((await searchEvents(withKey, { type: 'sports', from: '2027-01-02' })).map((e) => e.id)).toEqual([
+  expect((await searchEvents(withKey, { q: 'herons rate limited' })).events).toEqual([]);
+  expect(((await searchEvents(withKey, { type: 'sports', from: '2027-01-02' })).events).map((e) => e.id)).toEqual([
     'herons-rooks',
     'derby-finals',
   ]);
   vi.restoreAllMocks();
   stubApi(() => new Response('<html>oops', { status: 200 }));
-  expect(await searchEvents(withKey, { type: 'comedy', from: '2027-01-03' })).toHaveLength(2);
+  expect((await searchEvents(withKey, { type: 'comedy', from: '2027-01-03' })).events).toHaveLength(2);
   vi.restoreAllMocks();
   vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
-  expect(await searchEvents(withKey, { type: 'theater', from: '2027-01-04' })).toHaveLength(2);
+  expect((await searchEvents(withKey, { type: 'theater', from: '2027-01-04' })).events).toHaveLength(2);
 });
 
-test('tm- event detail maps fields and gets a 192-seat map priced from the range', async () => {
+test('tm- event detail maps fields and gets a concert house priced from the range', async () => {
   const calls = stubApi(() => Response.json(tmEvent({ id: 'detail1' })));
   const e = (await getEvent(withKey, 'tm-detail1'))!;
   expect(calls[0]).toContain('/discovery/v2/events/detail1.json?apikey=k-123');
@@ -135,7 +136,9 @@ test('tm- event detail maps fields and gets a 192-seat map priced from the range
     source: 'ticketmaster',
   });
   const seats = e.seatMap.sections.flatMap((s) => s.rows.flatMap((r) => r.seats));
-  expect(seats).toHaveLength(192);
+  expect(seats).toHaveLength(164);
+  expect(e.seatMap.sections.map((s) => s.name)).toEqual(['Pit', 'Floor', 'Balcony']);
+  expect(e.seatmapUrl).toBe('https://maps.ticketmaster.com/maps/geometry/3/event/x/staticImage');
   expect(e.seatMap.sections.map((s) => s.priceCents)).toEqual([19900, 12425, 4950]);
 });
 
@@ -225,7 +228,7 @@ test('a Ticketmaster event can be held and reserved end to end', async () => {
   const a = await newUser();
   const detail = await get('/api/events/tm-e2e');
   expect(detail.status).toBe(200);
-  const bookingId = await book(a, 'tm-e2e', 'Floor-1-1');
+  const bookingId = await book(a, 'tm-e2e', 'Pit-1-1');
   expect(await mine(a)).toMatchObject([
     {
       bookingId,
@@ -233,17 +236,81 @@ test('a Ticketmaster event can be held and reserved end to end', async () => {
       eventName: 'Nova Lights: World Tour',
       venueName: 'United Center',
       imageUrl: 'https://s1.ticketm.net/a_16_9.jpg',
-      seatIds: ['Floor-1-1'],
+      seatIds: ['Pit-1-1'],
       totalCents: 19900,
     },
   ]);
   // Reset reaches rooms of Ticketmaster events that have bookings.
   await resetAll();
   const b = await newUser();
-  expect((await get('/api/events/tm-e2e/holds', json(b, { seatId: 'Floor-1-1', nickname: 'ben' }))).status).toBe(200);
+  expect((await get('/api/events/tm-e2e/holds', json(b, { seatId: 'Pit-1-1', nickname: 'ben' }))).status).toBe(200);
 });
 
 test('an event page that cannot be loaded from the API is a 502, not a 404', async () => {
   stubApi(() => new Response('{}', { status: 503 }));
   expect((await get('/api/events/tm-down')).status).toBe(502);
+});
+
+test('results the API returns from outside the asked dates or type are dropped', async () => {
+  stubApi(() =>
+    page([
+      tmEvent({ id: 'early', dates: { start: { localDate: '2026-09-03' } } }), // a season pass that started earlier
+      tmEvent({ id: 'inside', dates: { start: { localDate: '2027-06-02', localTime: '20:00:00' } } }),
+      tmEvent({ id: 'after', dates: { start: { localDate: '2027-06-09' } } }),
+      tmEvent({ id: 'play', dates: { start: { localDate: '2027-06-03' } }, classifications: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Theatre' } }] }),
+    ]),
+  );
+  const hits = (await searchEvents(withKey, { type: 'concert', from: '2027-06-01', to: '2027-06-07' })).events;
+  expect(hits.map((e) => e.id)).toEqual(['tm-inside']);
+});
+
+test('with no dates asked, events that started before today are dropped', async () => {
+  stubApi(() => page([tmEvent({ id: 'old', dates: { start: { localDate: '2020-01-01' } } }), tmEvent({ id: 'future-ok' })]));
+  const hits = (await searchEvents(withKey, { q: 'past filter check' })).events;
+  expect(hits.map((e) => e.id)).toEqual(['tm-future-ok']);
+});
+
+// ---- pagination ----
+
+const paged = (events: unknown[], totalPages: number) =>
+  Response.json({ _embedded: { events }, page: { size: 20, totalElements: totalPages * 20, totalPages, number: 0 } });
+
+test('page 0 leads with own events, then the API page; later pages are API only', async () => {
+  const calls = stubApi((url) => paged([tmEvent({ id: `p${url.searchParams.get('page')}` })], 7));
+  const first = await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-30' });
+  expect(first.page).toBe(0);
+  expect(first.totalPages).toBe(7);
+  expect(first.events).toHaveLength(10);
+  expect(first.events.slice(0, 9).every((e) => e.source === 'picktick')).toBe(true);
+  expect(first.events[9].id).toBe('tm-p0');
+  const third = await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-30', page: 2 });
+  expect(third.page).toBe(2);
+  expect(third.events.map((e) => e.id)).toEqual(['tm-p2']);
+  expect(calls.map((c) => new URL(c).searchParams.get('page'))).toEqual(['0', '2']);
+});
+
+test('total pages are capped at the API deep-paging limit, and are 1 without a key', async () => {
+  stubApi(() => paged([tmEvent()], 4000));
+  expect((await searchEvents(withKey, { q: 'cap check' })).totalPages).toBe(50);
+  const own = await searchEvents(noKey, {});
+  expect(own).toMatchObject({ page: 0, totalPages: 1 });
+  expect((await searchEvents(noKey, { page: 3 })).events).toEqual([]);
+});
+
+test('the generated house follows the kind of event', async () => {
+  const kinds: Record<string, unknown> = {
+    game: [{ segment: { name: 'Sports' }, genre: { name: 'Basketball' } }],
+    play: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Theatre' } }],
+    standup: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Comedy' } }],
+  };
+  stubApi((url) => {
+    const id = url.pathname.split('/').pop()!.replace('.json', '');
+    return Response.json(tmEvent({ id, classifications: kinds[id], seatmap: undefined }));
+  });
+  const names = async (id: string) => (await getEvent(withKey, `tm-${id}`))!.seatMap.sections.map((s) => s.name);
+  expect(await names('game')).toEqual(['Courtside', 'Lower', 'Upper']);
+  expect(await names('play')).toEqual(['Orchestra', 'Mezzanine', 'Balcony']);
+  expect(await names('standup')).toEqual(['Front', 'Main']);
+  expect((await getEvent(withKey, 'tm-game'))!.seatmapUrl).toBeNull();
+  expect((await getEvent(noKey, 'hot'))!.seatmapUrl).toBeNull();
 });

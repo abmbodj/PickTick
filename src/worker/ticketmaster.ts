@@ -1,5 +1,5 @@
 import { buildSeatMap } from '../../shared/seat-map';
-import type { EventDetail, EventSummary, EventType, SeatMap } from '../../shared/types';
+import { MAX_PAGES, PAGE_SIZE, type EventDetail, type EventSummary, type EventType, type SeatMap } from '../../shared/types';
 
 // Ticketmaster Discovery API v2. Everything here degrades quietly: without a
 // key, or when the API is down or rate limited, search simply has no results
@@ -9,7 +9,7 @@ export const TM_PREFIX = 'tm-';
 const SEARCH_TTL = 300; // seconds; the API allows 5 requests/second and 5000/day
 const EVENT_TTL = 600;
 
-export type SearchParams = { q?: string; type?: EventType; from?: string; to?: string };
+export type SearchParams = { q?: string; type?: EventType; from?: string; to?: string; page?: number };
 
 type TmEvent = {
   id?: string;
@@ -21,6 +21,7 @@ type TmEvent = {
   dates?: { start?: { localDate?: string; localTime?: string } };
   classifications?: { segment?: { name?: string }; genre?: { name?: string } }[];
   priceRanges?: { min?: number; max?: number }[];
+  seatmap?: { staticUrl?: string };
   _embedded?: {
     venues?: { name?: string; city?: { name?: string } }[];
     attractions?: { name?: string }[];
@@ -71,23 +72,26 @@ function toSummary(e: TmEvent): EventSummary | null {
   };
 }
 
-// The API has no seat-level data, so every Ticketmaster event gets the same
-// generated house, priced from the event's price range when there is one.
+// The API has no seat-level data, so each event gets a generated house shaped
+// for its kind of event: [section, rows, seats per row], dearest first. Prices
+// run from the top to the bottom of the event's price range when it has one.
+const HOUSES: Record<EventType, [string, number, number][]> = {
+  concert: [['Pit', 2, 10], ['Floor', 4, 16], ['Balcony', 4, 20]],
+  sports: [['Courtside', 2, 12], ['Lower', 4, 18], ['Upper', 4, 22]],
+  theater: [['Orchestra', 5, 14], ['Mezzanine', 3, 14], ['Balcony', 3, 12]],
+  comedy: [['Front', 3, 10], ['Main', 5, 12]],
+};
+
 function generatedSeatMap(e: TmEvent): SeatMap {
   const range = e.priceRanges?.find((r) => r.min != null && r.max != null);
   const [high, low] = range ? [range.max! * 100, range.min! * 100] : [12000, 4500];
-  const mid = range ? (high + low) / 2 : 7500;
+  const house = HOUSES[typeOf(e)];
   return buildSeatMap(
-    [
-      ['Floor', high],
-      ['Lower', mid],
-      ['Upper', low],
-    ].map(([name, price]) => ({
-      name: name as string,
-      priceCents: Math.round(price as number),
-      rows: 4,
-      perRow: 16,
-    })),
+    house.map(([name, rows, perRow], i) => {
+      const t = house.length === 1 ? 0 : i / (house.length - 1); // 0 at the front, 1 at the back
+      const price = !range && house.length === 3 ? [12000, 7500, 4500][i] : high + (low - high) * t;
+      return { name, rows, perRow, priceCents: Math.round(price) };
+    }),
   );
 }
 
@@ -106,8 +110,12 @@ async function cachedJson(url: URL, apiKey: string, ttl: number): Promise<Respon
   return res;
 }
 
-export async function tmSearch(apiKey: string | undefined, p: SearchParams): Promise<EventSummary[]> {
-  if (!apiKey) return [];
+export async function tmSearch(
+  apiKey: string | undefined,
+  p: SearchParams,
+): Promise<{ events: EventSummary[]; totalPages: number }> {
+  const none = { events: [], totalPages: 1 };
+  if (!apiKey) return none;
   const url = new URL(`${ROOT}/events.json`);
   const today = new Date().toISOString().slice(0, 10);
   if (p.q) url.searchParams.set('keyword', p.q);
@@ -115,15 +123,29 @@ export async function tmSearch(apiKey: string | undefined, p: SearchParams): Pro
   url.searchParams.set('startDateTime', `${p.from ?? today}T00:00:00Z`);
   if (p.to) url.searchParams.set('endDateTime', `${p.to}T23:59:59Z`);
   url.searchParams.set('countryCode', 'US');
-  url.searchParams.set('size', '20');
+  url.searchParams.set('size', String(PAGE_SIZE));
+  url.searchParams.set('page', String(p.page ?? 0));
   url.searchParams.set('sort', 'date,asc');
   try {
     const res = await cachedJson(url, apiKey, SEARCH_TTL);
-    if (!res.ok) return [];
-    const data = (await res.json()) as { _embedded?: { events?: TmEvent[] } };
-    return (data._embedded?.events ?? []).map(toSummary).filter((e) => e !== null);
+    if (!res.ok) return none;
+    const data = (await res.json()) as {
+      _embedded?: { events?: TmEvent[] };
+      page?: { totalPages?: number };
+    };
+    // The API matches loosely: season passes that began before the range, and
+    // types that only mention the word. Keep what was actually asked for.
+    const first = p.from ?? today;
+    const events = (data._embedded?.events ?? [])
+      .map(toSummary)
+      .filter((e) => e !== null)
+      .filter((e) => {
+        const day = e.startsAt.slice(0, 10);
+        return day >= first && (!p.to || day <= p.to) && (!p.type || e.type === p.type);
+      });
+    return { events, totalPages: Math.min(Math.max(data.page?.totalPages ?? 1, 1), MAX_PAGES) };
   } catch {
-    return [];
+    return none;
   }
 }
 
@@ -144,5 +166,6 @@ export async function tmGetEvent(apiKey: string | undefined, id: string): Promis
     performerBlurb: '',
     seatMap: generatedSeatMap(e),
     externalUrl: httpsOrNull(e.url),
+    seatmapUrl: httpsOrNull(e.seatmap?.staticUrl),
   };
 }

@@ -1,6 +1,6 @@
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import type { Booking, EventDetail, EventSummary, SeatMap, Ticket } from '../../shared/types';
+import type { Booking, EventDetail, EventSummary, SearchPage, SeatMap, Ticket } from '../../shared/types';
 import { event, performer, userBooking, venue } from './db/schema';
 import { TM_PREFIX, tmGetEvent, tmSearch, type SearchParams } from './ticketmaster';
 
@@ -28,10 +28,17 @@ function ftsQuery(q: string): string | null {
   return words.map((w, i) => `"${w}"${i === words.length - 1 ? '*' : ''}`).join(' ');
 }
 
-// PickTick's own events plus Ticketmaster's, soonest first.
-export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<EventSummary[]> {
-  const [own, tm] = await Promise.all([searchOwn(env.DB, p), tmSearch(env.TICKETMASTER_API_KEY, p)]);
-  return [...own, ...tm].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+// One page of results. PickTick's own events lead the first page; the rest of
+// that page, and every later page, is Ticketmaster's listing. Each group is
+// soonest first. ponytail: own events are few, so they are not paged; give them
+// LIMIT/OFFSET if the catalog grows past a screenful.
+export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<SearchPage> {
+  const page = p.page ?? 0;
+  const [own, tm] = await Promise.all([
+    page === 0 ? searchOwn(env.DB, p) : [],
+    tmSearch(env.TICKETMASTER_API_KEY, p),
+  ]);
+  return { events: [...own, ...tm.events], page, totalPages: tm.totalPages };
 }
 
 async function searchOwn(d1: D1Database, p: SearchParams): Promise<EventSummary[]> {
@@ -69,7 +76,7 @@ export async function getEvent(env: CatalogEnv, id: string): Promise<EventDetail
     .where(eq(event.id, id));
   if (!row) return null;
   const { seatMapJson, ...rest } = row;
-  return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap, externalUrl: null };
+  return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap, externalUrl: null, seatmapUrl: null };
 }
 
 export async function listEventIds(d1: D1Database): Promise<string[]> {

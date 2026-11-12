@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { EVENT_TYPES } from '../../../shared/types';
 import { searchEvents, type SearchFilters } from '../lib/api';
@@ -14,15 +14,29 @@ const field =
 export default function Events() {
   const [params] = useSearchParams();
   const [filters, setFilters] = useState(() => ({ ...EMPTY, q: params.get('q') ?? '' }));
+  const [page, setPage] = useState(0);
   const deferred = useDebounced(filters, 300);
-  const set = (patch: Partial<SearchFilters>) => setFilters((f) => ({ ...f, ...patch }));
+  const results = useRef<HTMLElement>(null);
+  // Any change to the search starts again from the first page.
+  const change = (next: SearchFilters) => {
+    setFilters(next);
+    setPage(0);
+  };
+  const set = (patch: Partial<SearchFilters>) => change({ ...filters, ...patch });
+  const goTo = (next: number) => {
+    setPage(next);
+    results.current?.scrollIntoView({ block: 'start' });
+  };
   const filtered = Object.values(filters).some(Boolean);
 
-  const { data, isPending, isError, error, refetch } = useQuery({
-    queryKey: ['search', deferred],
-    queryFn: () => searchEvents(deferred),
+  const { data: result, isPending, isError, error, refetch, isPlaceholderData } = useQuery({
+    queryKey: ['search', deferred, page],
+    queryFn: () => searchEvents(deferred, page),
     placeholderData: keepPreviousData,
   });
+
+  const data = result?.events;
+  const totalPages = result?.totalPages ?? 1;
 
   return (
     <main className="py-8">
@@ -71,7 +85,12 @@ export default function Events() {
         </div>
       </fieldset>
 
-      <section aria-live="polite" aria-busy={isPending} className="mt-6 border-t border-line">
+      <section
+        ref={results}
+        aria-live="polite"
+        aria-busy={isPending || isPlaceholderData}
+        className="mt-6 scroll-mt-4 border-t border-line"
+      >
         {isPending && (
           <ul aria-label="Loading events">
             {[0, 1, 2, 3].map((i) => (
@@ -105,7 +124,7 @@ export default function Events() {
             <p className="mt-1 text-muted">Try a performer, a city, or a wider date range.</p>
             {filtered && (
               <button
-                onClick={() => setFilters(EMPTY)}
+                onClick={() => change(EMPTY)}
                 className="mt-4 h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface"
               >
                 Clear search and filters
@@ -140,6 +159,28 @@ export default function Events() {
           </ul>
         )}
       </section>
+
+      {data && totalPages > 1 && (
+        <nav aria-label="Pages" className="mt-6 flex items-center justify-between gap-4">
+          <button
+            onClick={() => goTo(page - 1)}
+            disabled={page === 0}
+            className="h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+          >
+            Previous
+          </button>
+          <p className="text-sm tabular-nums" aria-live="polite">
+            Page <span className="font-bold">{page + 1}</span> of {totalPages}
+          </p>
+          <button
+            onClick={() => goTo(page + 1)}
+            disabled={page + 1 >= totalPages}
+            className="h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+          >
+            Next
+          </button>
+        </nav>
+      )}
     </main>
   );
 }

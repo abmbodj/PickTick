@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { EVENT_TYPES, NICKNAME_MAX, type Booking } from '../../shared/types';
+import { EVENT_TYPES, MAX_PAGES, NICKNAME_MAX, type Booking } from '../../shared/types';
 import { type CatalogEnv, clearTickets, getEvent, listEventIds, listTickets, recordTicket, searchEvents } from './catalog';
 import { identity } from './identity';
 
@@ -18,6 +18,7 @@ const searchQuery = z.object({
   type: z.enum(EVENT_TYPES).optional(),
   from: day.optional(),
   to: day.optional(),
+  page: z.coerce.number().int().min(0).max(MAX_PAGES - 1).optional(),
 });
 
 app.get('/api/events/search', async (c) => {
@@ -48,7 +49,13 @@ async function indexTicket(env: CatalogEnv, uid: string, eventId: string, bookin
 // ---- seats: every call goes to the one Durable Object that owns the event ----
 
 const notFound = { error: 'Event not found' };
-const room = (env: Env, eventId: string) => env.EVENT_ROOM.get(env.EVENT_ROOM.idFromName(eventId));
+// Ticketmaster events get a generated seat map. Bump HOUSE when its shape
+// changes, so rooms built from the old shape are left behind.
+const HOUSE = 2;
+const room = (env: Env, eventId: string) =>
+  env.EVENT_ROOM.get(
+    env.EVENT_ROOM.idFromName(eventId.startsWith('tm-') ? `${eventId}#house${HOUSE}` : eventId),
+  );
 const nickname = z.string().trim().min(1).max(NICKNAME_MAX);
 const holdBody = z.object({ seatId: z.string().min(1).max(64), nickname });
 const bookingBody = z.object({ bookingId: z.uuid(), nickname });
