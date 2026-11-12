@@ -30,7 +30,7 @@ function HeroSeats() {
             className={taken ? 'hero-seat' : undefined}
             data-taken={taken || undefined}
             fill="transparent"
-            style={taken ? { animationDelay: `${(n * 0.19).toFixed(2)}s` } : undefined}
+            style={taken ? { animationDelay: `-${(n * 0.19).toFixed(2)}s` } : undefined}
           />
         );
       })}
