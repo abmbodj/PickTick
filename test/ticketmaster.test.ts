@@ -86,8 +86,7 @@ test('search sends the key, keyword, mapped type and date range', async () => {
     apikey: 'k-123',
     keyword: 'param check',
     segmentName: 'Arts & Theatre',
-    startDateTime: '2027-03-01T00:00:00Z',
-    endDateTime: '2027-03-31T23:59:59Z',
+    localStartDateTime: '2027-03-01T00:00:00,2027-03-31T23:59:59',
     countryCode: 'US',
     size: '20',
     sort: 'date,asc',
@@ -313,4 +312,29 @@ test('the generated house follows the kind of event', async () => {
   expect(await names('standup')).toEqual(['Front', 'Main']);
   expect((await getEvent(withKey, 'tm-game'))!.seatmapUrl).toBeNull();
   expect((await getEvent(noKey, 'hot'))!.seatmapUrl).toBeNull();
+});
+
+test('an open-ended search asks from the current US day, so tonight\'s shows are kept', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-11-12T00:30:00Z')); // still the evening of Nov 11 across the US
+  try {
+    const calls = stubApi(() => page([tmEvent({ id: 'tonight', dates: { start: { localDate: '2026-11-11', localTime: '20:00:00' } } })]));
+    const hits = (await searchEvents(withKey, { q: 'tonight check' })).events;
+    expect(new URL(calls[0]).searchParams.get('localStartDateTime')).toBe('2026-11-11T00:00:00,*');
+    expect(hits.map((e) => e.id)).toEqual(['tm-tonight']);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('an event is comedy when its genre or sub-genre says so', async () => {
+  stubApi(() =>
+    page([
+      tmEvent({ id: 'sub', classifications: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Theatre' }, subGenre: { name: 'Comedy' } }] }),
+      tmEvent({ id: 'gen', classifications: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Comedy' } }] }),
+      tmEvent({ id: 'not', classifications: [{ segment: { name: 'Arts & Theatre' }, genre: { name: 'Performance Art' } }] }),
+    ]),
+  );
+  const hits = (await searchEvents(withKey, { type: 'comedy', q: 'comedy tag check' })).events;
+  expect(hits.map((e) => e.id)).toEqual(['tm-sub', 'tm-gen']);
 });

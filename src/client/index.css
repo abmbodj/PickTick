@@ -1,21 +1,22 @@
 @import 'tailwindcss';
 
-/* Scene: someone on a phone in the evening, deciding what to go to. Dark,
-   neutral surfaces; the honey brand colour and the event pictures carry the
-   warmth. Voice: a marquee box office. One family (Archivo); headlines use its
-   wide cut. Seat states differ by shape as well as colour. */
+/* Scene: someone on a phone in the evening, deciding what to go to. Mood: a
+   velvet-rope club, a spotlight on crushed magenta in a dark room. Neutral
+   near-black surfaces; the magenta and the event pictures carry the colour.
+   One family (Archivo); headlines use its wide cut. Seat states differ by
+   shape as well as colour. */
 @theme {
   --color-bg: oklch(0.145 0 0);
-  --color-surface: oklch(0.205 0.004 80);
-  --color-line: oklch(0.33 0.006 80);
-  --color-ink: oklch(0.96 0.005 80);
-  --color-muted: oklch(0.74 0.012 80);
-  --color-brand: oklch(0.8 0.15 80);
-  --color-brand-strong: oklch(0.86 0.14 84);
-  --color-on-brand: oklch(0.2 0.03 80);
-  --color-accent: oklch(0.82 0.1 195);
-  --color-danger: oklch(0.74 0.16 27);
-  --color-sold: oklch(0.42 0.008 80);
+  --color-surface: oklch(0.205 0.008 355);
+  --color-line: oklch(0.33 0.012 355);
+  --color-ink: oklch(0.96 0.005 355);
+  --color-muted: oklch(0.74 0.015 355);
+  --color-brand: oklch(0.58 0.21 355);
+  --color-brand-strong: oklch(0.64 0.22 355);
+  --color-on-brand: oklch(0.99 0 0);
+  --color-accent: oklch(0.85 0.085 350);
+  --color-danger: oklch(0.82 0.14 65); /* amber, so warnings never read as the brand colour */
+  --color-sold: oklch(0.42 0.012 355);
   --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }

@@ -19,7 +19,7 @@ type TmEvent = {
   pleaseNote?: string;
   images?: { ratio?: string; url?: string; width?: number }[];
   dates?: { start?: { localDate?: string; localTime?: string } };
-  classifications?: { segment?: { name?: string }; genre?: { name?: string } }[];
+  classifications?: { segment?: { name?: string }; genre?: { name?: string }; subGenre?: { name?: string } }[];
   priceRanges?: { min?: number; max?: number }[];
   seatmap?: { staticUrl?: string };
   _embedded?: {
@@ -37,7 +37,7 @@ const TYPE_FILTER: Record<EventType, [string, string]> = {
 
 function typeOf(e: TmEvent): EventType {
   const c = e.classifications?.[0];
-  if (c?.genre?.name === 'Comedy') return 'comedy';
+  if (c?.genre?.name === 'Comedy' || c?.subGenre?.name === 'Comedy') return 'comedy';
   if (c?.segment?.name === 'Music') return 'concert';
   if (c?.segment?.name === 'Sports') return 'sports';
   return 'theater';
@@ -117,11 +117,17 @@ export async function tmSearch(
   const none = { events: [], totalPages: 1 };
   if (!apiKey) return none;
   const url = new URL(`${ROOT}/events.json`);
-  const today = new Date().toISOString().slice(0, 10);
+  // "Today" for a US audience: 12 hours behind UTC, so an evening show is still
+  // today after midnight UTC.
+  const today = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
   if (p.q) url.searchParams.set('keyword', p.q);
   if (p.type) url.searchParams.set(...TYPE_FILTER[p.type]);
-  url.searchParams.set('startDateTime', `${p.from ?? today}T00:00:00Z`);
-  if (p.to) url.searchParams.set('endDateTime', `${p.to}T23:59:59Z`);
+  // Filter on the event's local start. startDateTime also matches season passes
+  // that began long before the range, which fill whole pages with junk.
+  url.searchParams.set(
+    'localStartDateTime',
+    `${p.from ?? today}T00:00:00,${p.to ? `${p.to}T23:59:59` : '*'}`,
+  );
   url.searchParams.set('countryCode', 'US');
   url.searchParams.set('size', String(PAGE_SIZE));
   url.searchParams.set('page', String(p.page ?? 0));

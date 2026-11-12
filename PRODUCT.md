@@ -32,8 +32,8 @@ sentences, no hype. The interface gets out of the way of the seat map.
 
 - Real ticketing sites' dark patterns: fake urgency banners, surprise fees,
   pop-ups over the seat map.
-- Dark "concert poster" themes with neon gradients; they wash out on a projector.
-- Ticketmaster's own look, logo or blue. PickTick is its own brand: honey, ink, a marquee wide grotesque.
+- Neon gradients and glow effects. The theme is dark by the owner's choice, but flat: one saturated colour, no gradients.
+- Ticketmaster's own look, logo or blue. PickTick is its own brand: velvet-rope magenta on near-black, a marquee wide grotesque.
 - Dashboards that turn four counters into giant hero numbers.
 
 ## Design Principles

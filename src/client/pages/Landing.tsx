@@ -85,7 +85,7 @@ export default function Landing() {
                   className="h-13 w-full rounded-md border-2 border-on-brand bg-bg px-4 text-base text-ink placeholder:text-muted"
                 />
               </label>
-              <button className="h-13 rounded-md bg-on-brand px-6 text-base font-bold text-ink transition-opacity duration-150 hover:opacity-85 active:opacity-75">
+              <button className="h-13 rounded-md bg-bg px-6 text-base font-bold text-ink transition-opacity duration-150 hover:opacity-85 active:opacity-75">
                 Find events
               </button>
             </form>
