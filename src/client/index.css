@@ -452,6 +452,35 @@ h3 {
     radial-gradient(circle at var(--cut) 100%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) bottom / 100% 51% no-repeat;
 }
 
+/* The ticket page's ticket leans toward the mouse; its print floats a little above the card, and the
+   shadow falls away from the raised edge. Vars --tx/--ty (-0.5..0.5) are set by TicketCard. */
+.tilt {
+  --tx: 0;
+  --ty: 0;
+  filter: drop-shadow(calc(var(--tx) * -16px) calc(14px + var(--ty) * -16px) 22px rgb(8 6 5 / 0.7));
+  transition: filter 500ms var(--ease-out-quart);
+}
+.tilt .tilt-card {
+  transform: perspective(900px) rotateX(calc(var(--ty) * -14deg)) rotateY(calc(var(--tx) * 14deg));
+  transition: transform 500ms var(--ease-out-quart);
+}
+.tilt .tilt-layer {
+  translate: calc(var(--tx) * 8px) calc(var(--ty) * 8px);
+  transition: translate 500ms var(--ease-out-quart);
+}
+.tilt:hover,
+.tilt:hover .tilt-card,
+.tilt:hover .tilt-layer {
+  transition-duration: 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt .tilt-card,
+  .tilt .tilt-layer {
+    transform: none;
+    translate: none;
+  }
+}
+
 /* The tear line: a column of punched holes down the stub's edge. */
 .perforation {
   background-image: radial-gradient(circle, var(--color-bg) 1.5px, #0000 2px);
