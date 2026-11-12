@@ -461,7 +461,7 @@ h3 {
   transition: filter 500ms var(--ease-out-quart);
 }
 .tilt .tilt-card {
-  --lean: calc(14deg * (1 - var(--depth, 0) * 0.2)); /* tickets further back lean a little less */
+  --lean: calc(var(--tilt-max, 14deg) * (1 - var(--depth, 0) * 0.2)); /* tickets further back lean a little less */
   transform: perspective(900px) rotateX(calc(var(--ty) * -1 * var(--lean))) rotateY(calc(var(--tx) * var(--lean)));
   transition: transform 500ms var(--ease-out-quart);
 }
@@ -484,7 +484,7 @@ h3 {
 
 /* Several tickets fan out behind the front one, each a little further up, right and dimmer. */
 .ticket-fan {
-  transform: translate(calc(var(--depth) * 6px), calc(var(--depth) * -7px)) rotate(calc(var(--depth) * 1.2deg));
+  transform: translate(calc(var(--depth) * 6px), calc(var(--depth) * -7px)) rotate(calc(var(--depth) * var(--fan-turn, 1.2deg)));
   filter: brightness(calc(1 - var(--depth) * 0.18));
   transition:
     transform 450ms var(--ease-out-quart),

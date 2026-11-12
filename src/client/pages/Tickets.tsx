@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
 import CancelTicket from '../components/CancelTicket';
 import EventThumb from '../components/EventThumb';
+import { tiltReset, tiltTo } from '../components/TicketCard';
 import { getTickets } from '../lib/api';
 import { eventDay, eventTime, money, seatLabel } from '../lib/format';
 
@@ -50,19 +51,20 @@ export default function Tickets() {
         {tickets.data && tickets.data.length > 0 && (
           <ul className="stagger space-y-6">
             {tickets.data.map((t) => (
-              <li key={t.bookingId} className="relative">
-                {/* More than one seat: the other tickets peek out behind, fanned like the ticket page's stack. */}
+              <li key={t.bookingId} className="tilt relative [--fan-turn:0deg] [--tilt-max:3deg]" onPointerMove={tiltTo} onPointerLeave={tiltReset}>
+                {/* More than one seat: the other tickets peek out behind, like the ticket page's stack. Wide rows lean
+                    gently and their fan only slides, since turning a wide row lifts its far end into the title. */}
                 {[2, 1]
                   .filter((k) => k < t.seatIds.length)
                   .map((k) => (
                     <div key={k} aria-hidden="true" className="ticket-fan absolute inset-0" style={{ '--depth': k } as CSSProperties}>
-                      <div className="ticket flex h-full rounded-lg bg-surface [--stub:7rem] sm:[--stub:8rem]">
+                      <div className="tilt-card ticket flex h-full rounded-lg bg-surface [--stub:7rem] sm:[--stub:8rem]">
                         <div className="flex-1" />
                         <div className="w-28 rounded-r-lg bg-brand sm:w-32" />
                       </div>
                     </div>
                   ))}
-                <div className="ticket relative flex overflow-hidden rounded-lg bg-surface [--stub:7rem] sm:[--stub:8rem]">
+                <div className="tilt-card ticket relative flex overflow-hidden rounded-lg bg-surface [--stub:7rem] sm:[--stub:8rem]">
                   <EventThumb imageUrl={t.imageUrl} startsAt={t.startsAt} className="hidden w-40 self-stretch rounded-none sm:block" />
                   <div className="min-w-0 flex-1 p-4">
                     <h2 className="text-lg font-bold [overflow-wrap:anywhere]">

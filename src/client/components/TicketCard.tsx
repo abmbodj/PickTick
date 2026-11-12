@@ -4,14 +4,14 @@ import { eventDay, eventTime, money, seatLabel } from '../lib/format';
 import { LogoMark } from './Logo';
 
 // Tilt toward the pointer: -0.5..0.5 on each axis, written as CSS vars so React never re-renders.
-function tiltTo(ev: PointerEvent<HTMLElement>) {
+export function tiltTo(ev: PointerEvent<HTMLElement>) {
   if (ev.pointerType !== 'mouse') return;
   const el = ev.currentTarget;
   const r = el.getBoundingClientRect();
   el.style.setProperty('--tx', String((ev.clientX - r.left) / r.width - 0.5));
   el.style.setProperty('--ty', String((ev.clientY - r.top) / r.height - 0.5));
 }
-function tiltReset(ev: PointerEvent<HTMLElement>) {
+export function tiltReset(ev: PointerEvent<HTMLElement>) {
   ev.currentTarget.style.setProperty('--tx', '0');
   ev.currentTarget.style.setProperty('--ty', '0');
 }
