@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+  <!-- Stand-in picture for local development: a microphone in a spotlight on a brick wall. -->
+  <rect width="1200" height="675" fill="#5a2a1e"/>
+  <g fill="#6e3627">
+    <rect x="0" y="40" width="190" height="70"/><rect x="210" y="40" width="190" height="70"/><rect x="420" y="40" width="190" height="70"/><rect x="630" y="40" width="190" height="70"/><rect x="840" y="40" width="190" height="70"/><rect x="1050" y="40" width="190" height="70"/>
+    <rect x="100" y="130" width="190" height="70"/><rect x="310" y="130" width="190" height="70"/><rect x="730" y="130" width="190" height="70"/><rect x="940" y="130" width="190" height="70"/>
+    <rect x="0" y="220" width="190" height="70"/><rect x="1050" y="220" width="190" height="70"/>
+  </g>
+  <circle cx="600" cy="330" r="260" fill="#fff1c1" opacity=".5"/>
+  <rect x="588" y="300" width="24" height="295" fill="#222"/>
+  <rect x="560" y="200" width="80" height="130" rx="40" fill="#333"/>
+  <rect y="595" width="1200" height="80" fill="#8a5cff"/>
+</svg>

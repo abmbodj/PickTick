@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+  <!-- Stand-in picture for local development: red curtains around a lit stage. -->
+  <rect width="1200" height="675" fill="#2a0d14"/>
+  <ellipse cx="600" cy="470" rx="330" ry="120" fill="#f6e3b4" opacity=".55"/>
+  <g fill="#a3152b">
+    <path d="M0 0 h420 c-40 200 -120 420 -60 595 H0z"/><path d="M1200 0 h-420 c40 200 120 420 60 595 H1200z"/>
+  </g>
+  <g fill="#7a0f20"><rect x="60" width="40" height="595"/><rect x="180" width="40" height="595"/><rect x="1100" width="40" height="595"/><rect x="980" width="40" height="595"/></g>
+  <rect width="1200" height="70" fill="#5c0a18"/>
+  <rect y="595" width="1200" height="80" fill="#ff4d6d"/>
+</svg>

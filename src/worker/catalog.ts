@@ -7,6 +7,7 @@ import type {
   EventSummary,
   Performer,
   SearchPage,
+  EventType,
   SeatMap,
   Ticket,
 } from '../../shared/types';
@@ -41,7 +42,12 @@ const CITY_GEO: Record<string, [number, number]> = {
   Minneapolis: [44.98, -93.27],
   Austin: [30.27, -97.74],
 };
-const withGeo = <T extends { city: string }>(rows: T[]) => rows.map((r) => ({ ...r, geo: CITY_GEO[r.city] ?? null }));
+// Own events come without pictures. Where they are listed (no Ticketmaster
+// key: local development and tests) each gets a stand-in for its kind of
+// event, so cards can be tried with a picture end to end.
+const mockImage = (type: EventType) => `/mock/${type}.svg`;
+const withGeo = <T extends { city: string; type: EventType }>(rows: T[]) =>
+  rows.map((r) => ({ ...r, geo: CITY_GEO[r.city] ?? null, imageUrl: mockImage(r.type) }));
 
 // Great-circle distance in km.
 function distance([lat1, lng1]: [number, number], [lat2, lng2]: [number, number]): number {
@@ -111,7 +117,13 @@ export async function getEvent(env: CatalogEnv, id: string): Promise<EventDetail
     .where(eq(event.id, id));
   if (!row) return null;
   const { seatMapJson, ...rest } = row;
-  return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap, externalUrl: null, seatmapUrl: null };
+  return {
+    ...rest,
+    imageUrl: env.TICKETMASTER_API_KEY ? null : mockImage(rest.type),
+    seatMap: JSON.parse(seatMapJson) as SeatMap,
+    externalUrl: null,
+    seatmapUrl: null,
+  };
 }
 
 export async function listEventIds(d1: D1Database): Promise<string[]> {
@@ -236,5 +248,6 @@ export async function getPerformer(env: CatalogEnv, id: string): Promise<Perform
     .where(eq(event.performerId, id))
     .orderBy(asc(event.startsAt));
   if (events.length === 0) return null;
-  return { id, name: row.name, blurb: row.blurb, type: events[0].type, source: 'picktick', imageUrl: null, events };
+  const imageUrl = env.TICKETMASTER_API_KEY ? null : mockImage(events[0].type);
+  return { id, name: row.name, blurb: row.blurb, type: events[0].type, source: 'picktick', imageUrl, events };
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+  <!-- Stand-in picture for local development: stage lights over a crowd. -->
+  <rect width="1200" height="675" fill="#1d2b6b"/>
+  <polygon points="300,0 360,0 620,560 380,560" fill="#ffd84d" opacity=".35"/>
+  <polygon points="840,0 900,0 820,560 580,560" fill="#ff5fa2" opacity=".35"/>
+  <polygon points="590,0 630,0 760,560 520,560" fill="#7af0ff" opacity=".3"/>
+  <circle cx="330" cy="40" r="34" fill="#ffd84d"/><circle cx="870" cy="40" r="34" fill="#ff5fa2"/><circle cx="610" cy="34" r="28" fill="#7af0ff"/>
+  <g fill="#0b0f26">
+    <circle cx="120" cy="560" r="70"/><circle cx="260" cy="575" r="62"/><circle cx="400" cy="555" r="74"/><circle cx="540" cy="580" r="60"/>
+    <circle cx="680" cy="560" r="72"/><circle cx="820" cy="578" r="64"/><circle cx="960" cy="558" r="70"/><circle cx="1100" cy="575" r="66"/>
+  </g>
+  <rect y="595" width="1200" height="80" fill="#ffd84d"/>
+</svg>

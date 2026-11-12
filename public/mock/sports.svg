@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+  <!-- Stand-in picture for local development: a court under arena lights. -->
+  <rect width="1200" height="675" fill="#b5541c"/>
+  <g fill="#c9662a"><rect x="0" width="120" height="675"/><rect x="240" width="120" height="675"/><rect x="480" width="120" height="675"/><rect x="720" width="120" height="675"/><rect x="960" width="120" height="675"/></g>
+  <g fill="none" stroke="#fff4e0" stroke-width="10">
+    <line x1="600" y1="0" x2="600" y2="595"/><circle cx="600" cy="300" r="120"/>
+    <path d="M0 120 h220 v360 H0"/><path d="M1200 120 h-220 v360 h220"/>
+  </g>
+  <circle cx="600" cy="300" r="56" fill="#ff7a1a" stroke="#1a0d05" stroke-width="8"/>
+  <rect y="595" width="1200" height="80" fill="#2fd17a"/>
+</svg>

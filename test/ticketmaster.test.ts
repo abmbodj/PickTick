@@ -47,7 +47,7 @@ test('with no API key, search returns only own events and never calls out', asyn
   expect(hits).toEqual([]);
   const all = (await searchEvents(noKey, {})).events;
   expect(all).toHaveLength(9);
-  expect(all.every((e) => e.source === 'picktick' && e.imageUrl === null)).toBe(true);
+  expect(all.every((e) => e.source === 'picktick' && e.imageUrl === `/mock/${e.type}.svg`)).toBe(true);
   expect(calls).toEqual([]);
 });
 
