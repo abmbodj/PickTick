@@ -166,7 +166,7 @@ export default function HeroBooking() {
               }}
             >
               <label className="flex-1">
-                <span className="sr-only">Search events</span>
+                <span className="sr-only">Search artists, teams, venues or cities</span>
                 <input
                   type="search"
                   value={q}
@@ -182,8 +182,14 @@ export default function HeroBooking() {
                     ev.preventDefault();
                     select((pick + step + groups.length) % groups.length);
                   }}
-                  placeholder="Artist, team, venue or city"
-                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base text-ink placeholder:text-muted"
+                  // Names, not words: no red squiggles, no autocorrecting "Mulaney", and a Search key on phones.
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  enterKeyHint="search"
+                  placeholder="Who do you want to see?"
+                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-lg text-ink placeholder:text-muted placeholder:transition-opacity placeholder:duration-200 focus:placeholder:opacity-60"
                 />
               </label>
               <button className="btn-primary h-13">Find events</button>

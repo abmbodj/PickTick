@@ -219,7 +219,7 @@ export async function tmSuggest(apiKey: string | undefined, p: SearchParams): Pr
   try {
     const res = await cachedJson(url, apiKey, SEARCH_TTL);
     if (!res.ok) {
-      console.warn(`suggest: Ticketmaster answered ${res.status}`);
+      console.warn(`suggest: Ticketmaster answered ${res.status}: ${(await res.text()).slice(0, 400)}`);
       return [];
     }
     const data = (await res.json()) as { _embedded?: Record<string, TmEvent[]> };
