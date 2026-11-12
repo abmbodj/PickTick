@@ -1,10 +1,10 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { NICKNAME_MAX, type Booking, type EventDetail } from '../../../shared/types';
+import { NICKNAME_MAX, type Booking, type EventDetail, type EventType } from '../../../shared/types';
 import { container } from '../App';
 import { getEvent, getPerformer, searchEvents } from '../lib/api';
-import { eventDay, eventTime, shortDay } from '../lib/format';
+import { dayOfMonth, eventDay, eventTime, monthAbbrev, shortDay } from '../lib/format';
 import { useBooking } from '../lib/useBooking';
 import { useDebounced } from '../lib/useDebounced';
 import CheckoutPanel, { Notice } from './CheckoutPanel';
@@ -12,10 +12,32 @@ import { LogoMark } from './Logo';
 import SeatMap from './SeatMap';
 import TicketCard from './TicketCard';
 
-const MAX_MATCHES = 5;
-const MAX_DATES = 8;
-const chip =
-  'chip inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-semibold hover:border-muted aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-bg disabled:cursor-not-allowed disabled:opacity-50';
+const MAX_MATCHES = 6;
+const MAX_DATES = 12;
+// Selected is filled almond; the rest are outlined, so the choice reads at a glance.
+const choice =
+  'chip rounded-lg border border-line text-left hover:border-muted aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-bg disabled:cursor-not-allowed disabled:opacity-50';
+
+const TYPE_LABEL: Record<EventType, string> = {
+  concert: 'Concerts',
+  sports: 'Sports',
+  theater: 'Theatre',
+  comedy: 'Comedy',
+};
+const TYPE_ICON: Record<EventType, string> = {
+  concert: 'M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 0 1 6 0 M20 16a3 3 0 1 1-6 0a3 3 0 0 1 6 0',
+  sports: 'M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18 M3 12h18 M12 3v18 M5.6 5.6c3.5 3.5 3.5 9.3 0 12.8 M18.4 5.6c-3.5 3.5-3.5 9.3 0 12.8',
+  theater: 'M4 5h16v6a8 8 0 0 1-16 0z M9 10h.01 M15 10h.01 M9 14c1.5 1.5 4.5 1.5 6 0',
+  comedy: 'M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3 M5 11a7 7 0 0 0 14 0 M12 18v3 M8 21h8',
+};
+
+function TypeIcon({ type }: { type: EventType }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={TYPE_ICON[type]} />
+    </svg>
+  );
+}
 
 // The landing hero. Typing turns its block of seats into the best match's
 // live seat map, and the whole booking happens here: tap, name, reserve.
@@ -30,7 +52,11 @@ export default function HeroBooking() {
     enabled: searching,
     placeholderData: keepPreviousData, // the map stays put while the next letters are looked up
   });
-  const groups = searching ? (search.data?.groups ?? []).slice(0, MAX_MATCHES) : [];
+  // Matches sit under their kind of event. The kinds keep the order of their
+  // best match, so the top result stays first and the arrow keys follow the page.
+  const found = searching ? (search.data?.groups ?? []).slice(0, MAX_MATCHES) : [];
+  const kinds = [...new Set(found.map((g) => g.type))];
+  const groups = [...found].sort((a, b) => kinds.indexOf(a.type) - kinds.indexOf(b.type));
 
   // Which match, and which of its dates. A new search starts from the top again.
   const [pick, setPick] = useState(0);
@@ -181,39 +207,75 @@ export default function HeroBooking() {
                 <p className="notice-in font-semibold">Nothing on sale matches that. Try a performer, team or city.</p>
               )}
               {groups.length > 1 && (
-                <ul className="flex flex-wrap justify-center gap-2" aria-label="Matches">
-                  {groups.map((g, i) => (
-                    <li key={g.key}>
-                      <button className={chip} aria-pressed={g === group} disabled={holding} onClick={() => select(i)}>
-                        {g.name}
-                      </button>
-                    </li>
+                <div className="flex w-full flex-col gap-4">
+                  {kinds.map((kind) => (
+                    <div key={kind} role="group" aria-label={TYPE_LABEL[kind]} className="text-left">
+                      <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted">
+                        <TypeIcon type={kind} />
+                        {TYPE_LABEL[kind]}
+                      </p>
+                      <ul className="grid gap-2 sm:grid-cols-2">
+                        {groups
+                          .filter((g) => g.type === kind)
+                          .map((g) => (
+                            <li key={g.key}>
+                              <button
+                                className={`${choice} group flex w-full items-center gap-3 p-1.5 pr-3`}
+                                aria-pressed={g === group}
+                                disabled={holding}
+                                onClick={() => select(groups.indexOf(g))}
+                              >
+                                {g.imageUrl ? (
+                                  <img src={g.imageUrl} alt="" loading="lazy" className="h-12 w-16 shrink-0 rounded-md object-cover" />
+                                ) : (
+                                  <span className="grid h-12 w-16 shrink-0 place-items-center rounded-md bg-surface" aria-hidden="true">
+                                    <TypeIcon type={g.type} />
+                                  </span>
+                                )}
+                                <span className="min-w-0">
+                                  <span className="block truncate font-semibold">{g.name}</span>
+                                  <span className="block truncate text-sm text-muted group-aria-pressed:text-bg/75">
+                                    {g.eventCount > 1
+                                      ? `${g.eventCount} dates · next ${shortDay(g.nextStartsAt)}`
+                                      : `${shortDay(g.nextStartsAt)}${g.cities[0] ? ` · ${g.cities[0]}` : ''}`}
+                                  </span>
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
               {many && performer.data && (
-                <ul className="flex flex-wrap justify-center gap-2" aria-label="Dates">
-                  {performer.data.events.slice(0, MAX_DATES).map((d) => (
-                    <li key={d.id}>
-                      <button
-                        className={chip}
-                        aria-pressed={d.id === wanted}
-                        disabled={holding}
-                        onClick={() => setDateId(d.id)}
-                      >
-                        {shortDay(d.startsAt)}
-                        {d.city && ` · ${d.city}`}
-                      </button>
-                    </li>
-                  ))}
-                  {performer.data.events.length > MAX_DATES && (
-                    <li className="flex items-center">
-                      <Link to={`/artist/${performer.data.id}`} className="link px-2 text-sm">
-                        All {performer.data.events.length} dates
-                      </Link>
-                    </li>
-                  )}
-                </ul>
+                // A strip of dates that scrolls sideways; the time tells two shows on one day apart.
+                <div className="w-full overflow-x-auto pb-1">
+                  <ul className="mx-auto flex w-max snap-x gap-2" aria-label="Dates">
+                    {performer.data.events.slice(0, MAX_DATES).map((d) => (
+                      <li key={d.id} className="snap-start">
+                        <button
+                          className={`${choice} group flex w-28 flex-col items-center px-2 py-2 text-center`}
+                          aria-pressed={d.id === wanted}
+                          disabled={holding}
+                          onClick={() => setDateId(d.id)}
+                        >
+                          <span className="text-xs font-semibold uppercase">{monthAbbrev(d.startsAt)}</span>
+                          <span className="display text-2xl tabular-nums">{dayOfMonth(d.startsAt)}</span>
+                          <span className="text-xs font-semibold">{eventTime(d.startsAt)}</span>
+                          <span className="w-full truncate text-xs text-muted group-aria-pressed:text-bg/75">{d.city || d.venueName}</span>
+                        </button>
+                      </li>
+                    ))}
+                    {performer.data.events.length > MAX_DATES && (
+                      <li className="flex items-center">
+                        <Link to={`/artist/${performer.data.id}`} className="link px-3 text-sm whitespace-nowrap">
+                          All {performer.data.events.length} dates
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+                </div>
               )}
               {holding && groups.length + (many ? 1 : 0) > 1 && (
                 <p className="text-sm text-muted">Release your seats to switch event.</p>
