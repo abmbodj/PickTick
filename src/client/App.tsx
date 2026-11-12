@@ -86,11 +86,7 @@ export default function App() {
       </div>
 
       <footer className="border-t border-line">
-        <div className={`${container} flex flex-col gap-3 py-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between`}>
-          <p className="max-w-[60ch]">
-            Some listings use event data from Ticketmaster. PickTick is not affiliated with Ticketmaster and
-            does not issue real tickets.
-          </p>
+        <div className={`${container} flex py-6 text-sm sm:justify-end`}>
           <nav aria-label="Footer" className="flex gap-5 font-semibold text-ink">
             <Link to="/events" className="inline-flex min-h-11 items-center hover:underline">
               Events
