@@ -1,7 +1,17 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { EVENT_TYPES, MAX_PAGES, NICKNAME_MAX, type Booking } from '../../shared/types';
-import { type CatalogEnv, clearTickets, getEvent, listEventIds, listTickets, recordTicket, searchEvents } from './catalog';
+import {
+  type CatalogEnv,
+  clearTickets,
+  getEvent,
+  getPerformer,
+  groupEvents,
+  listEventIds,
+  listTickets,
+  recordTicket,
+  searchEvents,
+} from './catalog';
 import { identity } from './identity';
 
 export { EventRoom } from './event-room';
@@ -24,7 +34,17 @@ const searchQuery = z.object({
 app.get('/api/events/search', async (c) => {
   const parsed = searchQuery.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid search parameters' }, 400);
-  return c.json(await searchEvents(c.env, parsed.data));
+  const { events, page, totalPages } = await searchEvents(c.env, parsed.data);
+  return c.json({ groups: groupEvents(events), page, totalPages });
+});
+
+app.get('/api/performers/:id', async (c) => {
+  try {
+    const performer = await getPerformer(c.env, c.req.param('id'));
+    return performer ? c.json(performer) : c.json({ error: 'Nothing on sale for this performer' }, 404);
+  } catch {
+    return c.json({ error: 'These dates could not be loaded right now. Try again in a moment.' }, 502);
+  }
 });
 
 app.get('/api/events/:id', async (c) => {

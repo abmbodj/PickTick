@@ -24,7 +24,7 @@ type TmEvent = {
   seatmap?: { staticUrl?: string };
   _embedded?: {
     venues?: { name?: string; city?: { name?: string } }[];
-    attractions?: { name?: string }[];
+    attractions?: { id?: string; name?: string }[];
   };
 };
 
@@ -67,6 +67,7 @@ function toSummary(e: TmEvent): EventSummary | null {
     venueName: venue?.name ?? 'Venue to be announced',
     city: venue?.city?.name ?? '',
     performerName: e._embedded?.attractions?.[0]?.name ?? e.name,
+    performerId: e._embedded?.attractions?.[0]?.id ? TM_PREFIX + e._embedded.attractions[0].id : null,
     source: 'ticketmaster',
     imageUrl: imageOf(e),
   };
@@ -176,4 +177,32 @@ export async function tmGetEvent(apiKey: string | undefined, id: string): Promis
     externalUrl: httpsOrNull(e.url),
     seatmapUrl: httpsOrNull(e.seatmap?.staticUrl),
   };
+}
+
+// Every upcoming US date for one attraction (performer, team, show), soonest
+// first. null when there is no key or nothing is on sale.
+export async function tmPerformerEvents(
+  apiKey: string | undefined,
+  performerId: string,
+): Promise<{ name: string; events: EventSummary[] } | null> {
+  const rawId = performerId.slice(TM_PREFIX.length);
+  if (!apiKey || !/^[A-Za-z0-9_-]{1,64}$/.test(rawId)) return null;
+  const url = new URL(`${ROOT}/events.json`);
+  const today = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
+  url.searchParams.set('attractionId', rawId);
+  url.searchParams.set('localStartDateTime', `${today}T00:00:00,*`);
+  url.searchParams.set('countryCode', 'US');
+  url.searchParams.set('size', '60');
+  url.searchParams.set('sort', 'date,asc');
+  const res = await cachedJson(url, apiKey, SEARCH_TTL);
+  if (!res.ok) throw new Error(`Ticketmaster API responded ${res.status}`);
+  const raw = ((await res.json()) as { _embedded?: { events?: TmEvent[] } })._embedded?.events ?? [];
+  const name = raw.flatMap((e) => e._embedded?.attractions ?? []).find((a) => a.id === rawId)?.name;
+  const events = raw
+    .map(toSummary)
+    .filter((e) => e !== null)
+    // Headliner or support, every date here belongs on this performer's page.
+    .map((e) => ({ ...e, performerId, performerName: name ?? e.performerName }))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return events.length ? { name: name ?? events[0].performerName, events } : null;
 }

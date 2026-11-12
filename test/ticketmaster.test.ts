@@ -1,7 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, expect, test, vi } from 'vitest';
 import type { EventSummary, Ticket } from '../shared/types';
-import { getEvent, searchEvents } from '../src/worker/catalog';
+import { getEvent, getPerformer, groupEvents, searchEvents } from '../src/worker/catalog';
 
 const withKey = { ...env, TICKETMASTER_API_KEY: 'k-123' };
 const noKey = { ...env, TICKETMASTER_API_KEY: undefined };
@@ -22,7 +22,7 @@ const tmEvent = (over: Record<string, unknown> = {}) => ({
   seatmap: { staticUrl: 'https://maps.ticketmaster.com/maps/geometry/3/event/x/staticImage' },
   _embedded: {
     venues: [{ name: 'United Center', city: { name: 'Chicago' }, state: { stateCode: 'IL' } }],
-    attractions: [{ name: 'Nova Lights' }],
+    attractions: [{ id: 'K8vZ9171ob7', name: 'Nova Lights' }],
   },
   ...over,
 });
@@ -70,6 +70,7 @@ test('with a key, search lists own events then API events, and maps fields', asy
     venueName: 'United Center',
     city: 'Chicago',
     performerName: 'Nova Lights',
+    performerId: 'tm-K8vZ9171ob7',
     source: 'ticketmaster',
     imageUrl: 'https://s1.ticketm.net/a_16_9.jpg',
   });
@@ -88,7 +89,7 @@ test('search sends the key, keyword, mapped type and date range', async () => {
     segmentName: 'Arts & Theatre',
     localStartDateTime: '2027-03-01T00:00:00,2027-03-31T23:59:59',
     countryCode: 'US',
-    size: '20',
+    size: '100',
     sort: 'relevance,desc',
   });
   calls.length = 0;
@@ -290,7 +291,7 @@ test('page 0 leads with own events, then the API page; later pages are API only'
 
 test('total pages are capped at the API deep-paging limit, and are 1 without a key', async () => {
   stubApi(() => paged([tmEvent()], 4000));
-  expect((await searchEvents(withKey, { q: 'cap check' })).totalPages).toBe(50);
+  expect((await searchEvents(withKey, { q: 'cap check' })).totalPages).toBe(10);
   const own = await searchEvents(noKey, {});
   expect(own).toMatchObject({ page: 0, totalPages: 1 });
   expect((await searchEvents(noKey, { page: 3 })).events).toEqual([]);
@@ -337,4 +338,72 @@ test('an event is comedy when its genre or sub-genre says so', async () => {
   );
   const hits = (await searchEvents(withKey, { type: 'comedy', q: 'comedy tag check' })).events;
   expect(hits.map((e) => e.id)).toEqual(['tm-sub', 'tm-gen']);
+});
+
+// ---- one card per performer ----
+
+const summary = (over: Partial<EventSummary>): EventSummary => ({
+  id: 'e1', name: 'Tour Stop', type: 'concert', startsAt: '2027-01-10T20:00:00Z', venueName: 'Hall', city: 'Atlanta',
+  performerName: 'bleood', performerId: 'tm-A1', source: 'ticketmaster', imageUrl: 'https://s1.ticketm.net/x.jpg', ...over,
+});
+
+test('events by one performer collapse into one group, in first-seen order', () => {
+  const groups = groupEvents([
+    summary({ id: 'e2', startsAt: '2027-01-12T20:00:00Z', city: 'Millvale' }),
+    summary({ id: 'solo', name: 'One Night Only', performerName: 'Solo Act', performerId: 'tm-B2', city: 'Reno' }),
+    summary({ id: 'e1', startsAt: '2027-01-10T20:00:00Z', city: 'Atlanta' }),
+    summary({ id: 'e3', startsAt: '2027-01-14T20:00:00Z', city: 'Atlanta' }),
+    summary({ id: 'loose', name: 'Food Fair', performerId: null, performerName: 'Food Fair', city: 'Austin' }),
+  ]);
+  expect(groups.map((g) => g.key)).toEqual(['tm-A1', 'tm-B2', 'loose']);
+  expect(groups[0]).toMatchObject({
+    name: 'bleood',
+    performerId: 'tm-A1',
+    eventCount: 3,
+    nextStartsAt: '2027-01-10T20:00:00Z',
+    firstEventId: 'e1',
+    cities: ['Atlanta', 'Millvale'],
+  });
+  // A performer with a single event is shown as that event.
+  expect(groups[1]).toMatchObject({ name: 'One Night Only', eventCount: 1, firstEventId: 'solo', venueName: 'Hall' });
+  expect(groups[2]).toMatchObject({ name: 'Food Fair', performerId: null, eventCount: 1 });
+});
+
+test('the search route answers with groups', async () => {
+  stubApi(() => page([tmEvent({ id: 'g1' }), tmEvent({ id: 'g2', dates: { start: { localDate: '2027-02-01' } } })]));
+  const res = await get('/api/events/search?q=group%20route%20check');
+  const body = (await res.json()) as { groups: { name: string; eventCount: number }[]; page: number; totalPages: number };
+  expect(body.groups).toEqual([expect.objectContaining({ name: 'Nova Lights', eventCount: 2 })]);
+  expect(body).toMatchObject({ page: 0, totalPages: 1 });
+});
+
+test('a Ticketmaster performer page lists every date, soonest first', async () => {
+  const calls = stubApi(() =>
+    page([
+      tmEvent({ id: 'd2', dates: { start: { localDate: '2027-03-02', localTime: '20:00:00' } } }),
+      tmEvent({ id: 'd1', dates: { start: { localDate: '2027-03-01', localTime: '20:00:00' } }, _embedded: {
+        venues: [{ name: 'Fox Theatre', city: { name: 'Detroit' } }],
+        attractions: [{ id: 'OPENER', name: 'Opening Act' }, { id: 'K8vZ9171ob7', name: 'Nova Lights' }],
+      } }),
+    ]),
+  );
+  const p = (await getPerformer(withKey, 'tm-K8vZ9171ob7'))!;
+  const url = new URL(calls[0]);
+  expect(url.searchParams.get('attractionId')).toBe('K8vZ9171ob7');
+  expect(url.searchParams.get('sort')).toBe('date,asc');
+  expect(p).toMatchObject({ id: 'tm-K8vZ9171ob7', name: 'Nova Lights', source: 'ticketmaster', imageUrl: 'https://s1.ticketm.net/a_16_9.jpg' });
+  expect(p.events.map((e) => e.id)).toEqual(['tm-d1', 'tm-d2']);
+});
+
+test('performer page: own performers come from the catalog; unknown or empty is null', async () => {
+  const own = (await getPerformer(noKey, 'marigold-co'))!;
+  expect(own).toMatchObject({ name: 'Marigold Repertory Company', source: 'picktick' });
+  expect(own.blurb).toContain('resident company');
+  expect(own.events.map((e) => e.id)).toEqual(['clockmakers-daughter', 'history-of-rain']);
+  expect(await getPerformer(noKey, 'nobody')).toBeNull();
+  stubApi(() => page([]));
+  expect(await getPerformer(withKey, 'tm-NOEVENTS')).toBeNull();
+  expect(await getPerformer(withKey, 'tm-bad/../id')).toBeNull();
+  expect((await get('/api/performers/nobody')).status).toBe(404);
+  expect((await get('/api/performers/marigold-co')).status).toBe(200);
 });

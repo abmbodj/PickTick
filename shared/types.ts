@@ -20,11 +20,12 @@ export type EventSummary = {
   venueName: string;
   city: string;
   performerName: string;
+  performerId: string | null; // null when the event has no named performer
   source: 'picktick' | 'ticketmaster';
   imageUrl: string | null;
 };
-export const PAGE_SIZE = 20;
-export const MAX_PAGES = 50; // the Ticketmaster API stops at 1000 results
+export const PAGE_SIZE = 100; // events fetched per page, before grouping by performer
+export const MAX_PAGES = 10; // the Ticketmaster API stops at 1000 results
 export type SearchPage = { events: EventSummary[]; page: number; totalPages: number };
 export type EventDetail = EventSummary & {
   description: string;
@@ -68,4 +69,29 @@ export type Ticket = {
   seatIds: string[];
   totalCents: number;
   createdAt: number;
+};
+
+// Search shows one card per performer, however many dates they have.
+export type EventGroup = {
+  key: string;
+  performerId: string | null;
+  name: string; // the performer, or the event itself when there is only one
+  type: EventType;
+  source: 'picktick' | 'ticketmaster';
+  imageUrl: string | null;
+  eventCount: number;
+  nextStartsAt: string;
+  firstEventId: string; // the soonest event
+  venueName: string; // of the soonest event
+  cities: string[]; // distinct, soonest first
+};
+export type GroupPage = { groups: EventGroup[]; page: number; totalPages: number };
+export type Performer = {
+  id: string;
+  name: string;
+  blurb: string;
+  type: EventType;
+  source: 'picktick' | 'ticketmaster';
+  imageUrl: string | null;
+  events: EventSummary[];
 };

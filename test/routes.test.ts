@@ -11,9 +11,9 @@ const get = (path: string, init?: RequestInit) => SELF.fetch(`https://x${path}`,
 
 test('search route returns events and rejects a bad type or date', async () => {
   const ok = await get('/api/events/search?q=herons');
-  expect(((await ok.json()) as { events: { id: string }[] }).events.map((e) => e.id)).toEqual(['herons-rooks']);
+  expect(((await ok.json()) as { groups: { firstEventId: string }[] }).groups.map((g) => g.firstEventId)).toEqual(['herons-rooks']);
   expect((await get('/api/events/search?page=-1')).status).toBe(400);
-  expect((await get('/api/events/search?page=50')).status).toBe(400);
+  expect((await get('/api/events/search?page=10')).status).toBe(400);
   expect((await get('/api/events/search?page=x')).status).toBe(400);
   expect((await get('/api/events/search?type=opera')).status).toBe(400);
   expect((await get('/api/events/search?from=tomorrow')).status).toBe(400);

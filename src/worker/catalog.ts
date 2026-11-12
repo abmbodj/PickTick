@@ -1,8 +1,17 @@
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import type { Booking, EventDetail, EventSummary, SearchPage, SeatMap, Ticket } from '../../shared/types';
+import type {
+  Booking,
+  EventDetail,
+  EventGroup,
+  EventSummary,
+  Performer,
+  SearchPage,
+  SeatMap,
+  Ticket,
+} from '../../shared/types';
 import { event, performer, userBooking, venue } from './db/schema';
-import { TM_PREFIX, tmGetEvent, tmSearch, type SearchParams } from './ticketmaster';
+import { TM_PREFIX, tmGetEvent, tmPerformerEvents, tmSearch, type SearchParams } from './ticketmaster';
 
 export type { SearchParams };
 // The API key is optional: without it the site shows PickTick's own events only.
@@ -16,6 +25,7 @@ const summary = {
   venueName: venue.name,
   city: venue.city,
   performerName: performer.name,
+  performerId: sql<string>`${performer.id}`,
   source: sql<'picktick'>`'picktick'`,
   imageUrl: sql<null>`NULL`,
 };
@@ -122,4 +132,61 @@ export async function clearTickets(d1: D1Database): Promise<string[]> {
   const booked = await db.selectDistinct({ id: userBooking.eventId }).from(userBooking);
   await db.delete(userBooking);
   return booked.map((r) => r.id);
+}
+
+// ---- one card per performer ----
+
+// Collapses a result list so a tour with thirty dates is one entry, not
+// thirty. Groups keep the order their first event appeared in.
+export function groupEvents(events: EventSummary[]): EventGroup[] {
+  const byKey = new Map<string, EventSummary[]>();
+  for (const e of events) {
+    const key = e.performerId ?? e.id;
+    byKey.set(key, [...(byKey.get(key) ?? []), e]);
+  }
+  return [...byKey].map(([key, list]) => {
+    const sorted = [...list].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    const first = sorted[0];
+    return {
+      key,
+      performerId: first.performerId,
+      name: sorted.length === 1 ? first.name : first.performerName,
+      type: first.type,
+      source: first.source,
+      imageUrl: sorted.find((e) => e.imageUrl)?.imageUrl ?? null,
+      eventCount: sorted.length,
+      nextStartsAt: first.startsAt,
+      firstEventId: first.id,
+      venueName: first.venueName,
+      cities: [...new Set(sorted.map((e) => e.city).filter(Boolean))],
+    };
+  });
+}
+
+export async function getPerformer(env: CatalogEnv, id: string): Promise<Performer | null> {
+  if (id.startsWith(TM_PREFIX)) {
+    const tm = await tmPerformerEvents(env.TICKETMASTER_API_KEY, id);
+    if (!tm) return null;
+    return {
+      id,
+      name: tm.name,
+      blurb: '',
+      type: tm.events[0].type,
+      source: 'ticketmaster',
+      imageUrl: tm.events.find((e) => e.imageUrl)?.imageUrl ?? null,
+      events: tm.events,
+    };
+  }
+  const db = drizzle(env.DB);
+  const [row] = await db.select().from(performer).where(eq(performer.id, id));
+  if (!row) return null;
+  const events = await db
+    .select(summary)
+    .from(event)
+    .innerJoin(venue, eq(event.venueId, venue.id))
+    .innerJoin(performer, eq(event.performerId, performer.id))
+    .where(eq(event.performerId, id))
+    .orderBy(asc(event.startsAt));
+  if (events.length === 0) return null;
+  return { id, name: row.name, blurb: row.blurb, type: events[0].type, source: 'picktick', imageUrl: null, events };
 }
