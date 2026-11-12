@@ -126,7 +126,7 @@ export default function Event() {
           </div>
           {e.source === 'ticketmaster' && (
             <p className="mt-2 max-w-[65ch] text-sm text-muted">
-              This seat map is PickTick's own layout for this kind of event, not the venue's real floor plan.
+              This seat map and its prices are PickTick's own, not the venue's floor plan or Ticketmaster's prices.
             </p>
           )}
           {e.seatmapUrl && (

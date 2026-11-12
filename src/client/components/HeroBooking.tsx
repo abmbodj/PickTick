@@ -308,7 +308,7 @@ export default function HeroBooking() {
               />
               {e?.source === 'ticketmaster' && (
                 <p className="mx-auto mt-3 max-w-[65ch] text-center text-sm text-muted">
-                  This seat map is PickTick's own layout for this kind of event, not the venue's real floor plan.
+                  This seat map and its prices are PickTick's own, not the venue's floor plan or Ticketmaster's prices.
                 </p>
               )}
             </div>
