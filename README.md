@@ -95,6 +95,32 @@ It fits Cloudflare's free plan.
 
 ## How it works
 
+```mermaid
+flowchart LR
+  client["Client<br/>React SPA"]
+  api["Worker: Hono API<br/>routing, Zod checks,<br/>anonymous uid cookie"]
+  catalog["Catalog and search<br/>catalog.ts"]
+  tm["Ticketmaster<br/>Discovery API"]
+  room["EventRoom<br/>Durable Object<br/>one per event"]
+  pay["Pay<br/>fake button, no Stripe"]
+  d1[("D1 (SQLite)<br/>catalog")]
+  roomdb[("SQLite inside<br/>each EventRoom")]
+
+  client -->|"GET /api/events/search<br/>GET /api/events/:id<br/>GET /api/performers/:id"| api
+  client -->|"POST /holds<br/>POST /bookings"| api
+  client <-.->|"WebSocket /live<br/>seat changes, viewers"| room
+  api --> catalog
+  catalog -->|"FTS5 search"| d1
+  catalog -->|"real events, when a key is set"| tm
+  api -->|"hold, book, cancel<br/>one request at a time"| room
+  room --- roomdb
+  room --- pay
+  api -->|"My tickets index"| d1
+
+  d1 ~~~ d1tables["<b>event</b><br/>id, venue_id, performer_id,<br/>name, description, type, starts_at<br/><br/><b>venue</b><br/>id, name, city, seat_map_json<br/><br/><b>performer</b><br/>id, name, blurb<br/><br/><b>user_booking</b><br/>booking_id, user_id, event_id, seats, total<br/><br/><b>event_fts</b> full-text index"]
+  roomdb ~~~ roomtables["<b>seat</b><br/>id, price_cents, booking_id<br/><br/><b>hold</b><br/>seat_id, user_id, nickname, expires_at<br/><br/><b>booking</b><br/>id, user_id, nickname, total_cents, created_at<br/><br/><b>stats</b><br/>granted, rejected, expired, sold"]
+```
+
 | Piece | Built with | Holds |
 |---|---|---|
 | API | One Worker running Hono, every input checked with Zod | Routes, the anonymous identity cookie |
@@ -113,7 +139,7 @@ seats to viewers; correctness never depends on it.
 
 The design follows Hello Interview's
 [Ticketmaster breakdown](https://www.hellointerview.com/learn/system-design/problem-breakdowns/ticketmaster),
-mapped onto Cloudflare. [SPEC.md](SPEC.md) has the full mapping and the reasoning.
+mapped onto Cloudflare.
 
 ### API
 
@@ -160,5 +186,4 @@ brand, audience and design principles.
 ## Left out on purpose
 
 Real payments, accounts, an admin UI for events, a virtual waiting queue, rate limiting and edge
-caching. Each is a non-goal for a classroom demo; [SPEC.md](SPEC.md) section 9 says when each would be
-worth adding.
+caching. Each is a non-goal for a classroom demo.
