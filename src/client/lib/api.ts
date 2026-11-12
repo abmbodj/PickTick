@@ -24,7 +24,7 @@ const post = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-export type SearchFilters = { q: string; type: EventType | ''; from: string; to: string; nearby: '1' };
+export type SearchFilters = { q: string; type: EventType | ''; from: string; to: string; nearby?: '1' };
 
 export function searchEvents(f: Partial<SearchFilters>, page = 0): Promise<GroupPage> {
   const params = new URLSearchParams();
