@@ -20,7 +20,8 @@ const STEPS = [
 ];
 
 export default function Landing() {
-  const trending = useQuery({ queryKey: ['search', {}, 0], queryFn: () => searchEvents({}) });
+  // Events around the visitor; the server falls back to the usual list when it can't tell where they are.
+  const trending = useQuery({ queryKey: ['search', { nearby: '1' }, 0], queryFn: () => searchEvents({ nearby: '1' }) });
   const byType = useQueries({
     queries: ROWS.map(([type]) => ({
       queryKey: ['search', { type }, 0],
@@ -41,7 +42,7 @@ export default function Landing() {
       <div className="after-hero">
       <section className={`${container} relative py-12 sm:py-16`}>
         <div className="rise flex items-end justify-between gap-4 [--i:4]">
-          <h2 className="display text-3xl sm:text-4xl">Trending</h2>
+          <h2 className="display text-3xl sm:text-4xl">{trending.data && !trending.data.nearby ? 'Trending' : 'Near you'}</h2>
           <Link to="/events" className="link shrink-0">
             See all events
           </Link>

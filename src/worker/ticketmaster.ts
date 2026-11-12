@@ -9,7 +9,15 @@ export const TM_PREFIX = 'tm-';
 const SEARCH_TTL = 300; // seconds; the API allows 5 requests/second and 5000/day
 const EVENT_TTL = 600;
 
-export type SearchParams = { q?: string; type?: EventType; from?: string; to?: string; page?: number };
+export type SearchParams = {
+  q?: string;
+  type?: EventType;
+  from?: string;
+  to?: string;
+  page?: number;
+  near?: [number, number] | null; // only events around here, when set
+};
+const NEARBY_MILES = '75';
 
 type TmEvent = {
   id?: string;
@@ -133,6 +141,12 @@ export async function tmSearch(
     `${p.from ?? today}T00:00:00,${p.to ? `${p.to}T23:59:59` : '*'}`,
   );
   url.searchParams.set('countryCode', 'US');
+  if (p.near) {
+    // Rounded so visitors in one city share a cached answer.
+    url.searchParams.set('latlong', p.near.map((n) => n.toFixed(1)).join(','));
+    url.searchParams.set('radius', NEARBY_MILES);
+    url.searchParams.set('unit', 'miles');
+  }
   url.searchParams.set('size', String(PAGE_SIZE));
   url.searchParams.set('page', String(p.page ?? 0));
   // Best-known events first, as people expect from a ticket site; sorting by

@@ -31,6 +31,7 @@ const searchQuery = z.object({
   from: day.optional(),
   to: day.optional(),
   page: z.coerce.number().int().min(0).max(MAX_PAGES - 1).optional(),
+  nearby: z.literal('1').optional(), // events around the visitor, when we can tell where they are
 });
 
 // The visitor's rough position: Cloudflare's own estimate from the request, so no permission
@@ -45,8 +46,21 @@ function visitorAt(req: Request): [number, number] | null {
 app.get('/api/events/search', async (c) => {
   const parsed = searchQuery.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid search parameters' }, 400);
-  const { events, page, totalPages } = await searchEvents(c.env, parsed.data);
-  return c.json({ groups: groupEvents(events, visitorAt(c.req.raw)), page, totalPages });
+  const { nearby, ...params } = parsed.data;
+  const at = visitorAt(c.req.raw);
+  if (nearby && at) {
+    const found = await searchEvents(c.env, { ...params, near: at });
+    // Nothing on near them: fall through to the usual list, and say so.
+    if (found.events.length)
+      return c.json({
+        groups: groupEvents(found.events, at),
+        page: found.page,
+        totalPages: found.totalPages,
+        nearby: true,
+      });
+  }
+  const { events, page, totalPages } = await searchEvents(c.env, params);
+  return c.json({ groups: groupEvents(events, at), page, totalPages });
 });
 
 app.get('/api/performers/:id', async (c) => {

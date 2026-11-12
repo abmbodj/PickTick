@@ -19,6 +19,11 @@ test('search route returns events and rejects a bad type or date', async () => {
   expect((await get('/api/events/search?page=x')).status).toBe(400);
   expect((await get('/api/events/search?type=opera')).status).toBe(400);
   expect((await get('/api/events/search?from=tomorrow')).status).toBe(400);
+  expect((await get('/api/events/search?nearby=yes')).status).toBe(400);
+  // No position for the visitor here, so "nearby" falls back to the usual list.
+  const nearby = await get('/api/events/search?nearby=1');
+  expect(nearby.status).toBe(200);
+  expect(((await nearby.json()) as { nearby?: boolean }).nearby).toBeUndefined();
 });
 
 test('event route returns detail, 404 for an unknown id', async () => {

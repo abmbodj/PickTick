@@ -73,8 +73,13 @@ function ftsQuery(q: string): string | null {
 // if the catalog grows past a screenful.
 export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<SearchPage> {
   const page = p.page ?? 0;
-  if (!env.TICKETMASTER_API_KEY)
-    return { events: page === 0 ? await searchOwn(env.DB, p) : [], page, totalPages: 1 };
+  if (!env.TICKETMASTER_API_KEY) {
+    const own = page === 0 ? await searchOwn(env.DB, p) : [];
+    // Own events are few, so "nearby" just puts the closest first.
+    const near = p.near;
+    if (near) own.sort((a, b) => (a.geo ? distance(near, a.geo) : Infinity) - (b.geo ? distance(near, b.geo) : Infinity));
+    return { events: own, page, totalPages: 1 };
+  }
   const tm = await tmSearch(env.TICKETMASTER_API_KEY, p);
   // Every card on the live site carries a picture, so an event without one is left out.
   return { events: tm.events.filter((e) => e.imageUrl), page, totalPages: tm.totalPages };

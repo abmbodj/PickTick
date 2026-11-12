@@ -87,7 +87,7 @@ export type EventGroup = {
   venueName: string; // of the soonest event
   cities: string[]; // distinct, soonest first
 };
-export type GroupPage = { groups: EventGroup[]; page: number; totalPages: number };
+export type GroupPage = { groups: EventGroup[]; page: number; totalPages: number; nearby?: boolean }; // nearby: these are around the visitor
 export type Performer = {
   id: string;
   name: string;
