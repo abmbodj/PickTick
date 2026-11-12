@@ -1,9 +1,12 @@
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import type { EventDetail, EventSummary, EventType, SeatMap } from '../../shared/types';
-import { event, performer, venue } from './db/schema';
+import type { Booking, EventDetail, EventSummary, SeatMap, Ticket } from '../../shared/types';
+import { event, performer, userBooking, venue } from './db/schema';
+import { TM_PREFIX, tmGetEvent, tmSearch, type SearchParams } from './ticketmaster';
 
-export type SearchParams = { q?: string; type?: EventType; from?: string; to?: string };
+export type { SearchParams };
+// The API key is optional: without it the site shows PickTick's own events only.
+export type CatalogEnv = { DB: D1Database; TICKETMASTER_API_KEY?: string };
 
 const summary = {
   id: event.id,
@@ -13,6 +16,8 @@ const summary = {
   venueName: venue.name,
   city: venue.city,
   performerName: performer.name,
+  source: sql<'picktick'>`'picktick'`,
+  imageUrl: sql<null>`NULL`,
 };
 
 // Turns free text into a safe FTS5 query: every word quoted, last word a prefix.
@@ -23,7 +28,13 @@ function ftsQuery(q: string): string | null {
   return words.map((w, i) => `"${w}"${i === words.length - 1 ? '*' : ''}`).join(' ');
 }
 
-export async function searchEvents(d1: D1Database, p: SearchParams): Promise<EventSummary[]> {
+// PickTick's own events plus Ticketmaster's, soonest first.
+export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<EventSummary[]> {
+  const [own, tm] = await Promise.all([searchOwn(env.DB, p), tmSearch(env.TICKETMASTER_API_KEY, p)]);
+  return [...own, ...tm].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+}
+
+async function searchOwn(d1: D1Database, p: SearchParams): Promise<EventSummary[]> {
   const where: SQL[] = [];
   const match = p.q ? ftsQuery(p.q) : null;
   if (match)
@@ -42,7 +53,9 @@ export async function searchEvents(d1: D1Database, p: SearchParams): Promise<Eve
     .orderBy(asc(event.startsAt));
 }
 
-export async function getEvent(d1: D1Database, id: string): Promise<EventDetail | null> {
+export async function getEvent(env: CatalogEnv, id: string): Promise<EventDetail | null> {
+  if (id.startsWith(TM_PREFIX)) return tmGetEvent(env.TICKETMASTER_API_KEY, id);
+  const d1 = env.DB;
   const [row] = await drizzle(d1)
     .select({
       ...summary,
@@ -56,10 +69,50 @@ export async function getEvent(d1: D1Database, id: string): Promise<EventDetail 
     .where(eq(event.id, id));
   if (!row) return null;
   const { seatMapJson, ...rest } = row;
-  return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap };
+  return { ...rest, seatMap: JSON.parse(seatMapJson) as SeatMap, externalUrl: null };
 }
 
 export async function listEventIds(d1: D1Database): Promise<string[]> {
   const rows = await drizzle(d1).select({ id: event.id }).from(event);
   return rows.map((r) => r.id);
+}
+
+// ---- "My tickets" read model ----
+
+export async function recordTicket(env: CatalogEnv, userId: string, eventId: string, b: Booking) {
+  const e = await getEvent(env, eventId);
+  if (!e) return;
+  await drizzle(env.DB)
+    .insert(userBooking)
+    .values({
+      bookingId: b.id,
+      userId,
+      eventId,
+      eventName: e.name,
+      startsAt: e.startsAt,
+      venueName: e.venueName,
+      city: e.city,
+      imageUrl: e.imageUrl,
+      seatIdsJson: JSON.stringify(b.seatIds),
+      totalCents: b.totalCents,
+      createdAt: b.createdAt,
+    })
+    .onConflictDoNothing();
+}
+
+export async function listTickets(d1: D1Database, userId: string): Promise<Ticket[]> {
+  const rows = await drizzle(d1)
+    .select()
+    .from(userBooking)
+    .where(eq(userBooking.userId, userId))
+    .orderBy(asc(userBooking.startsAt), asc(userBooking.createdAt));
+  return rows.map(({ seatIdsJson, userId: _u, ...t }) => ({ ...t, seatIds: JSON.parse(seatIdsJson) as string[] }));
+}
+
+// Every event whose room may hold state: own events plus any event with a booking.
+export async function clearTickets(d1: D1Database): Promise<string[]> {
+  const db = drizzle(d1);
+  const booked = await db.selectDistinct({ id: userBooking.eventId }).from(userBooking);
+  await db.delete(userBooking);
+  return booked.map((r) => r.id);
 }

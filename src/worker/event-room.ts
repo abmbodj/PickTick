@@ -48,7 +48,7 @@ export class EventRoom extends DurableObject<Env> {
       .exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'seat'")
       .toArray().length;
     if (exists) return true;
-    const event = await getEvent(this.env.DB, eventId);
+    const event = await getEvent(this.env, eventId);
     if (!event) return false;
     this.ctx.storage.transactionSync(() => {
       this.sql.exec(`

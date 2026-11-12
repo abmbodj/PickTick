@@ -1,32 +1,9 @@
 // Writes migrations/0002_seed.sql. Every name here is invented. Run: npm run seed
 import { writeFileSync } from 'node:fs';
-import type { EventType, SeatMap } from '../shared/types.ts';
+import { buildSeatMap } from '../shared/seat-map.ts';
+import type { EventType } from '../shared/types.ts';
 
-type SectionSpec = { name: string; priceCents: number; rows: number; perRow: number };
-
-function seatMap(specs: SectionSpec[]): SeatMap {
-  const widest = Math.max(...specs.map((s) => s.perRow));
-  let y = 0;
-  const sections = specs.map((s) => {
-    const rows = Array.from({ length: s.rows }, (_, r) => {
-      const offset = (widest - s.perRow) / 2;
-      const row = {
-        label: String(r + 1),
-        seats: Array.from({ length: s.perRow }, (_, i) => ({
-          id: `${s.name}-${r + 1}-${i + 1}`,
-          number: i + 1,
-          x: offset + i,
-          y,
-        })),
-      };
-      y += 1;
-      return row;
-    });
-    y += 0.8; // aisle between sections
-    return { name: s.name, priceCents: s.priceCents, rows };
-  });
-  return { sections };
-}
+const seatMap = buildSeatMap;
 
 const venues = [
   { id: 'coat-check', name: 'The Coat Check', city: 'Portland', map: seatMap([

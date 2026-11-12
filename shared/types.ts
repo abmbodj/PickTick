@@ -20,11 +20,14 @@ export type EventSummary = {
   venueName: string;
   city: string;
   performerName: string;
+  source: 'picktick' | 'ticketmaster';
+  imageUrl: string | null;
 };
 export type EventDetail = EventSummary & {
   description: string;
   performerBlurb: string;
   seatMap: SeatMap;
+  externalUrl: string | null; // where real tickets are sold, for Ticketmaster events
 };
 
 export type SeatStatus = 'available' | 'held' | 'sold';
@@ -48,3 +51,17 @@ export type HoldResult =
   | { ok: true; expiresAt: number }
   | { ok: false; reason: 'taken' | 'limit' | 'unknown_seat' };
 export type ConfirmResult = { ok: true; booking: Booking } | { ok: false; reason: 'expired' };
+
+// One row of "My tickets": a booking plus enough of the event to show it.
+export type Ticket = {
+  bookingId: string;
+  eventId: string;
+  eventName: string;
+  startsAt: string;
+  venueName: string;
+  city: string;
+  imageUrl: string | null;
+  seatIds: string[];
+  totalCents: number;
+  createdAt: number;
+};

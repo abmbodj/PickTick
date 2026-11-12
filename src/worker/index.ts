@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { EVENT_TYPES, NICKNAME_MAX } from '../../shared/types';
-import { getEvent, listEventIds, searchEvents } from './catalog';
+import { EVENT_TYPES, NICKNAME_MAX, type Booking } from '../../shared/types';
+import { type CatalogEnv, clearTickets, getEvent, listEventIds, listTickets, recordTicket, searchEvents } from './catalog';
 import { identity } from './identity';
 
 export { EventRoom } from './event-room';
@@ -23,13 +23,27 @@ const searchQuery = z.object({
 app.get('/api/events/search', async (c) => {
   const parsed = searchQuery.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid search parameters' }, 400);
-  return c.json(await searchEvents(c.env.DB, parsed.data));
+  return c.json(await searchEvents(c.env, parsed.data));
 });
 
 app.get('/api/events/:id', async (c) => {
-  const event = await getEvent(c.env.DB, c.req.param('id'));
-  return event ? c.json(event) : c.json({ error: 'Event not found' }, 404);
+  try {
+    const event = await getEvent(c.env, c.req.param('id'));
+    return event ? c.json(event) : c.json({ error: 'Event not found' }, 404);
+  } catch {
+    return c.json({ error: 'This event could not be loaded right now. Try again in a moment.' }, 502);
+  }
 });
+
+// The booking itself lives in the event's room; this only feeds "My tickets",
+// so a failure here must not fail a booking that already succeeded.
+async function indexTicket(env: CatalogEnv, uid: string, eventId: string, booking: Booking) {
+  try {
+    await recordTicket(env, uid, eventId, booking);
+  } catch (err) {
+    console.error('my-tickets index write failed', err);
+  }
+}
 
 // ---- seats: every call goes to the one Durable Object that owns the event ----
 
@@ -86,14 +100,19 @@ app.post('/api/events/:id/bookings', async (c) => {
   );
   if (!result) return c.json(notFound, 404);
   if (!result.ok) return c.json({ error: 'Your hold ran out before payment. Pick seats again.' }, 410);
+  await indexTicket(c.env, c.get('uid'), eventId, result.booking);
   return c.json(result.booking);
 });
 
 app.get('/api/events/:id/bookings/:bookingId', async (c) => {
   const eventId = c.req.param('id');
   const booking = await room(c.env, eventId).getBooking(eventId, c.get('uid'), c.req.param('bookingId'));
-  return booking ? c.json(booking) : c.json({ error: 'Booking not found' }, 404);
+  if (!booking) return c.json({ error: 'Booking not found' }, 404);
+  await indexTicket(c.env, c.get('uid'), eventId, booking); // repairs a row a failed write left out
+  return c.json(booking);
 });
+
+app.get('/api/me/bookings', async (c) => c.json(await listTickets(c.env.DB, c.get('uid'))));
 
 // ---- demo reset ----
 
@@ -106,8 +125,8 @@ async function sameSecret(given: string | undefined, expected: string | undefine
 app.post('/api/admin/reset', async (c) => {
   if (!(await sameSecret(c.req.header('x-reset-secret'), c.env.RESET_SECRET)))
     return c.json({ error: 'Wrong or missing reset secret' }, 401);
-  const ids = await listEventIds(c.env.DB);
-  await Promise.all(ids.map((id) => room(c.env, id).reset()));
+  const ids = new Set([...(await listEventIds(c.env.DB)), ...(await clearTickets(c.env.DB))]);
+  await Promise.all([...ids].map((id) => room(c.env, id).reset()));
   return c.body(null, 204);
 });
 

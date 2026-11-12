@@ -9,6 +9,7 @@ export default defineConfig(async () => ({
         bindings: {
           TEST_MIGRATIONS: await readD1Migrations('migrations'),
           RESET_SECRET: 'test-secret',
+          TICKETMASTER_API_KEY: 'test-key',
         },
       },
     }),
