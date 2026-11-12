@@ -222,9 +222,7 @@ export async function tmSuggest(apiKey: string | undefined, p: SearchParams): Pr
       console.warn(`suggest: Ticketmaster answered ${res.status}: ${(await res.text()).slice(0, 400)}`);
       return [];
     }
-    const data = (await res.json()) as { _embedded?: Record<string, TmEvent[]> };
-    // ponytail: shape check while suggestions are new; drop once confirmed live
-    console.log(`suggest: ${Object.entries(data._embedded ?? {}).map(([k, v]) => `${k}=${v.length}`).join(' ') || 'nothing'}`);
+    const data = (await res.json()) as { _embedded?: { events?: TmEvent[] } };
     const first = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
     return (data._embedded?.events ?? [])
       .map(toSummary)
