@@ -33,7 +33,7 @@ export default function Stats({ stats, connected }: { stats: StatsData | null; c
         ))}
       </dl>
       <p className="mt-2 text-sm text-muted">
-        When two people tap the same seat, only the first gets it. The other is counted as a conflict.
+        When two people tap the same seat, only the first gets it.
       </p>
     </section>
   );
