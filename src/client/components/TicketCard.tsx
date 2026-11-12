@@ -18,7 +18,7 @@ function tiltReset(ev: PointerEvent<HTMLElement>) {
 
 // The reservation as a real ticket: the event on the body, a tear-off stub with the admit count and total.
 // The shape lives on an inner element so it doesn't fight ticket-print's clip-path.
-// `large` is the ticket page's hero version: bigger, and it tilts in 3D under the mouse.
+// It tilts in 3D under the mouse. `large` is the ticket page's bigger version.
 export default function TicketCard({
   event: e,
   booking: b,
@@ -31,9 +31,9 @@ export default function TicketCard({
   const n = b.seatIds.length;
   return (
     <article
-      className={`ticket-print w-full text-left ${large ? 'tilt max-w-xl' : 'max-w-md'}`}
-      onPointerMove={large ? tiltTo : undefined}
-      onPointerLeave={large ? tiltReset : undefined}
+      className={`ticket-print tilt w-full text-left ${large ? 'max-w-xl' : 'max-w-md'}`}
+      onPointerMove={tiltTo}
+      onPointerLeave={tiltReset}
     >
       <div className={`tilt-card ticket flex rounded-lg bg-surface ${large ? '[--stub:7rem] sm:[--stub:9rem]' : '[--stub:7rem]'}`}>
         <div className={`tilt-layer min-w-0 flex-1 ${large ? 'p-5 sm:p-7' : 'p-4'}`}>
