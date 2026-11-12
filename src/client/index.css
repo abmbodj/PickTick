@@ -284,8 +284,23 @@ h3 {
    blooms in from the left, and a soft almond glow sits low, below the seats.
    Every layer's falloff follows a smoothstep curve (stops at
    0, 10, 35, 65, 90, 100%), so the slope is zero where each starts and ends:
-   a straight ramp leaves a visible crease there. */
+   a straight ramp leaves a visible crease there.
+   The bloom and glow drift slowly on registered properties, so only the
+   background repaints; reduced motion parks them at their resting spots. */
+@property --bloom-x { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@property --bloom-y { syntax: '<percentage>'; inherits: false; initial-value: 38%; }
+@property --glow-x { syntax: '<percentage>'; inherits: false; initial-value: 60%; }
+@keyframes bloom-drift {
+  50% { --bloom-x: 12%; --bloom-y: 52%; }
+  to { --bloom-x: 4%; --bloom-y: 26%; }
+}
+@keyframes glow-drift {
+  to { --glow-x: 42%; }
+}
 .hero-mesh {
+  animation:
+    bloom-drift 22s ease-in-out infinite alternate,
+    glow-drift 17s ease-in-out infinite alternate;
   --glow: color-mix(in oklab, var(--color-brand) 26%, transparent);
   --bloom: color-mix(in oklab, var(--color-velvet) 65%, var(--color-brand));
   background:
@@ -296,14 +311,14 @@ h3 {
       color-mix(in oklab, var(--color-bg) 35%, transparent) 65%,
       color-mix(in oklab, var(--color-bg) 10%, transparent) 75%,
       transparent 85%),
-    radial-gradient(60% 11rem at 60% calc(100% - 11rem), /* ends exactly at the hero's bottom */
+    radial-gradient(60% 11rem at var(--glow-x) calc(100% - 11rem), /* ends exactly at the hero's bottom */
       var(--glow),
       color-mix(in oklab, var(--glow) 90%, transparent) 20%,
       color-mix(in oklab, var(--glow) 65%, transparent) 40%,
       color-mix(in oklab, var(--glow) 35%, transparent) 60%,
       color-mix(in oklab, var(--glow) 10%, transparent) 80%,
       transparent),
-    radial-gradient(60% 65% at 0% 38%,
+    radial-gradient(60% 65% at var(--bloom-x) var(--bloom-y),
       var(--bloom) 0%,
       color-mix(in oklab, var(--bloom) 90%, transparent) 16%,
       color-mix(in oklab, var(--bloom) 65%, transparent) 32%,
