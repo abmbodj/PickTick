@@ -407,3 +407,29 @@ test('performer page: own performers come from the catalog; unknown or empty is 
   expect((await get('/api/performers/nobody')).status).toBe(404);
   expect((await get('/api/performers/marigold-co')).status).toBe(200);
 });
+
+test('two listings of the same performer under different ids are one group and one page', async () => {
+  const groups = groupEvents([
+    summary({ id: 'a1', performerId: 'tm-A1', city: 'Atlanta' }),
+    summary({ id: 'z1', performerId: 'tm-Z9', performerName: 'BLEOOD', city: 'Dallas', startsAt: '2027-01-11T20:00:00Z' }),
+  ]);
+  expect(groups).toHaveLength(1);
+  expect(groups[0]).toMatchObject({ key: 'tm-A1', performerId: 'tm-A1', eventCount: 2, cities: ['Atlanta', 'Dallas'] });
+
+  const twin = (id: string, date: string, attraction: { id: string; name: string }, city = 'Chicago') =>
+    tmEvent({ id, dates: { start: { localDate: date } }, _embedded: {
+      venues: [{ name: 'Hall', city: { name: city } }],
+      attractions: [attraction],
+    } });
+  stubApi((url) =>
+    url.searchParams.get('attractionId')
+      ? page([twin('dup1', '2027-04-01', { id: 'DUPCHECK', name: 'Twin Act' })])
+      : page([
+          twin('dup1', '2027-04-01', { id: 'DUPCHECK', name: 'Twin Act' }),
+          twin('dup2', '2027-04-02', { id: 'OTHERID', name: 'twin act' }, 'Dallas'),
+          twin('unrelated', '2027-04-03', { id: 'X', name: 'Twin Act Tribute' }, 'Reno'),
+        ]),
+  );
+  const p = (await getPerformer(withKey, 'tm-DUPCHECK'))!;
+  expect(p.events.map((e) => e.id)).toEqual(['tm-dup1', 'tm-dup2']);
+});

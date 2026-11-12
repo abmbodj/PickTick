@@ -141,15 +141,16 @@ export async function clearTickets(d1: D1Database): Promise<string[]> {
 export function groupEvents(events: EventSummary[]): EventGroup[] {
   const byKey = new Map<string, EventSummary[]>();
   for (const e of events) {
-    const key = e.performerId ?? e.id;
+    // By name, not id: Ticketmaster sometimes lists one act under two ids.
+    const key = e.performerId ? `${e.source}:${e.performerName.toLowerCase()}` : e.id;
     byKey.set(key, [...(byKey.get(key) ?? []), e]);
   }
-  return [...byKey].map(([key, list]) => {
+  return [...byKey.values()].map((list) => {
     const sorted = [...list].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     const first = sorted[0];
     return {
-      key,
-      performerId: first.performerId,
+      key: list[0].performerId ?? list[0].id,
+      performerId: list[0].performerId,
       name: sorted.length === 1 ? first.name : first.performerName,
       type: first.type,
       source: first.source,
@@ -167,6 +168,13 @@ export async function getPerformer(env: CatalogEnv, id: string): Promise<Perform
   if (id.startsWith(TM_PREFIX)) {
     const tm = await tmPerformerEvents(env.TICKETMASTER_API_KEY, id);
     if (!tm) return null;
+    // Pick up dates listed under a second id for the same act.
+    const sameName = (await tmSearch(env.TICKETMASTER_API_KEY, { q: tm.name })).events.filter(
+      (e) => e.performerName.toLowerCase() === tm.name.toLowerCase(),
+    );
+    const seen = new Set(tm.events.map((e) => e.id));
+    tm.events.push(...sameName.filter((e) => !seen.has(e.id)));
+    tm.events.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     return {
       id,
       name: tm.name,
