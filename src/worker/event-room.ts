@@ -328,11 +328,25 @@ export class EventRoom extends DurableObject<Env> {
     if (!snapshot) return Response.json({ error: 'Event not found' }, { status: 404 });
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
+    server.serializeAttachment({ userId }); // survives hibernation, so viewers can be counted later
     server.send(JSON.stringify({ type: 'snapshot', ...snapshot } satisfies RoomMessage));
+    this.sendViewers();
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // People, not tabs: one person with the event open twice counts once.
+  private sendViewers(leaving?: WebSocket) {
+    const open = this.ctx.getWebSockets().filter((ws) => ws !== leaving);
+    const people = new Set(open.map((ws) => (ws.deserializeAttachment() as { userId?: string } | null)?.userId || ws));
+    this.send({ type: 'viewers', viewers: people.size });
   }
 
   webSocketClose(ws: WebSocket) {
     ws.close();
+    this.sendViewers(ws);
+  }
+
+  webSocketError(ws: WebSocket) {
+    this.sendViewers(ws);
   }
 }

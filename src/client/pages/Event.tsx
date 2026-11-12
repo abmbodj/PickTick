@@ -146,7 +146,7 @@ export default function Event() {
 
         <aside className="flex flex-col gap-6">
           <CheckoutPanel seats={heldSeats} msLeft={left} paying={paying} onRelease={release} onPay={onPay} />
-          <Stats stats={room.state?.stats ?? null} connected={room.connected} />
+          <Stats stats={room.state?.stats ?? null} connected={room.connected} viewers={room.state?.viewers} />
           {e.performerBlurb && (
             <section>
               <h2 className="font-bold">{e.performerName}</h2>

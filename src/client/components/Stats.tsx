@@ -7,8 +7,26 @@ const LABELS: [keyof StatsData, string][] = [
   ['sold', 'Seats sold'],
 ];
 
+// Who else has this event open right now, counted by the event's room. Nothing until it knows.
+export function Viewers({ count, className = '' }: { count: number | null | undefined; className?: string }) {
+  if (!count) return null;
+  return (
+    <p className={`text-sm text-muted ${className}`}>
+      {count === 1 ? 'Just you here right now' : `You and ${count - 1} ${count === 2 ? 'other' : 'others'} here right now`}
+    </p>
+  );
+}
+
 // Live counters straight from the event's Durable Object.
-export default function Stats({ stats, connected }: { stats: StatsData | null; connected: boolean }) {
+export default function Stats({
+  stats,
+  connected,
+  viewers,
+}: {
+  stats: StatsData | null;
+  connected: boolean;
+  viewers?: number | null;
+}) {
   return (
     <section aria-label="Live counters">
       <div className="flex items-center justify-between">
@@ -21,6 +39,7 @@ export default function Stats({ stats, connected }: { stats: StatsData | null; c
           {connected ? 'Live' : 'Reconnecting'}
         </span>
       </div>
+      {connected && <Viewers count={viewers} className="mt-1" />}
       <dl className="mt-2 grid grid-cols-2 gap-x-4 border-t border-line sm:grid-cols-4 lg:grid-cols-2">
         {LABELS.map(([key, label]) => (
           <div key={key} className="flex items-baseline justify-between gap-2 border-b border-line py-2">

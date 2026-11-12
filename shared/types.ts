@@ -43,7 +43,8 @@ export type Mine = { seatIds: string[]; expiresAt: number | null };
 export type Snapshot = { seats: SeatView[]; stats: Stats; mine: Mine; now: number };
 export type RoomMessage =
   | ({ type: 'snapshot' } & Snapshot)
-  | { type: 'seats'; seats: SeatView[]; stats: Stats; now: number };
+  | { type: 'seats'; seats: SeatView[]; stats: Stats; now: number }
+  | { type: 'viewers'; viewers: number }; // people with this event open right now, you included
 
 export type User = { id: string; nickname: string };
 export type Booking = {

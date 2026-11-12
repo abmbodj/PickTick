@@ -35,6 +35,7 @@ test('event route returns detail, 404 for an unknown id', async () => {
 // ---- booking API ----
 import { beforeEach } from 'vitest';
 import type { Booking, RoomMessage } from '../shared/types';
+import type { SeatMessage } from '../src/client/lib/room';
 
 const SEAT = 'Front-1-1';
 const json = (cookie: string, body: unknown, method = 'POST'): RequestInit => ({
@@ -147,18 +148,26 @@ test('paying with no live holds is 410; a non-uuid bookingId is 400', async () =
 async function live(cookie: string) {
   const res = await get('/api/events/hot/live', { headers: { upgrade: 'websocket', cookie } });
   const ws = res.webSocket!;
-  const queue: RoomMessage[] = [];
+  // Seat messages queue for next(); viewer counts are kept apart, as they come and go with every socket.
+  const queue: SeatMessage[] = [];
+  const viewers: number[] = [];
   let wake: (() => void) | null = null;
   ws.addEventListener('message', (e) => {
-    queue.push(JSON.parse(e.data as string));
+    const msg = JSON.parse(e.data as string) as RoomMessage;
+    if (msg.type === 'viewers') viewers.push(msg.viewers);
+    else queue.push(msg);
     wake?.();
   });
   ws.accept();
   return {
+    viewers,
     close: () => ws.close(),
-    async next(): Promise<RoomMessage> {
-      if (!queue.length) await new Promise<void>((r) => (wake = r));
+    async next(): Promise<SeatMessage> {
+      while (!queue.length) await new Promise<void>((r) => (wake = r));
       return queue.shift()!;
+    },
+    async viewersNow(n: number) {
+      while (viewers.at(-1) !== n) await new Promise<void>((r) => (wake = r));
     },
   };
 }
@@ -222,4 +231,19 @@ test('live: a first-time visitor with no cookie still gets a socket', async () =
   expect(res.status).toBe(101);
   res.webSocket!.accept();
   res.webSocket!.close();
+});
+
+test('live: everyone hears how many people have the event open, one each however many tabs', async () => {
+  const [a, b] = [await newUser(), await newUser()];
+  const first = await live(a);
+  await first.viewersNow(1);
+  const second = await live(b);
+  await first.viewersNow(2);
+  const again = await live(a); // a second tab, same person
+  await new Promise((r) => setTimeout(r, 50));
+  expect(first.viewers.at(-1)).toBe(2);
+  second.close();
+  await first.viewersNow(1);
+  first.close();
+  again.close();
 });

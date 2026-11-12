@@ -6,6 +6,7 @@ export type RoomState = {
   seats: Record<string, SeatView>;
   stats: Stats;
   mine: Mine;
+  viewers: number | null; // people with this event open, you included; null until the room says
   skewMs: number; // server clock minus this device's clock
   // Server time at which the server took back holds of mine that had run out.
   expiredAt: number | null;
@@ -16,7 +17,9 @@ const dropMine = (mine: Mine, gone: Set<string>): Mine => {
   return { seatIds, expiresAt: seatIds.length ? mine.expiresAt : null };
 };
 
-export function applyMessage(state: RoomState | null, msg: RoomMessage, clientNow: number): RoomState {
+export type SeatMessage = Exclude<RoomMessage, { type: 'viewers' }>;
+
+export function applyMessage(state: RoomState | null, msg: SeatMessage, clientNow: number): RoomState {
   const skewMs = msg.now - clientNow;
   // Holds of mine that are gone once their deadline has passed ran out;
   // gone any earlier, I released or paid for them.
@@ -32,6 +35,7 @@ export function applyMessage(state: RoomState | null, msg: RoomMessage, clientNo
       seats: Object.fromEntries(msg.seats.map((s) => [s.id, s])),
       stats: msg.stats,
       mine,
+      viewers: state?.viewers ?? null,
       skewMs,
       expiredAt: expiry(mine),
     };
@@ -41,7 +45,7 @@ export function applyMessage(state: RoomState | null, msg: RoomMessage, clientNo
   // A seat of mine that is no longer held has expired, been released or been sold.
   const gone = new Set(msg.seats.filter((s) => s.status !== 'held').map((s) => s.id));
   const mine = dropMine(state.mine, gone);
-  return { seats, stats: msg.stats, mine, skewMs, expiredAt: expiry(mine) };
+  return { ...state, seats, stats: msg.stats, mine, skewMs, expiredAt: expiry(mine) };
 }
 
 export function applyHold(state: RoomState, seatId: string, expiresAt: number): RoomState {

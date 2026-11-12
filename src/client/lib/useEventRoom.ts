@@ -10,7 +10,8 @@ type Action =
 
 function reducer(state: RoomState | null, a: Action): RoomState | null {
   if (a.t === 'reset') return null;
-  if (a.t === 'message') return applyMessage(state, a.msg, a.now);
+  if (a.t === 'message')
+    return a.msg.type === 'viewers' ? state && { ...state, viewers: a.msg.viewers } : applyMessage(state, a.msg, a.now);
   if (!state) return state;
   if (a.t === 'hold') return applyHold(state, a.seatId, a.expiresAt);
   return a.seatIds.reduce(applyRelease, state);

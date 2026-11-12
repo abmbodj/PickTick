@@ -11,6 +11,7 @@ import CancelTicket from './CancelTicket';
 import CheckoutPanel, { Notice } from './CheckoutPanel';
 import { LogoMark } from './Logo';
 import SeatMap from './SeatMap';
+import { Viewers } from './Stats';
 import TicketCard from './TicketCard';
 
 const MAX_MATCHES = 6;
@@ -222,6 +223,9 @@ export default function HeroBooking() {
                     {e.city && `, ${e.city}`}
                   </span>
                 </p>
+              )}
+              {e && live && booking.room.connected && (
+                <Viewers count={booking.room.state?.viewers} />
               )}
               {searching && search.isError && (
                 <p>

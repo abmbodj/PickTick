@@ -1,12 +1,12 @@
 import { expect, test } from 'vitest';
-import { applyHold, applyMessage, applyRelease, msLeft } from '../src/client/lib/room';
+import { applyHold, applyMessage, applyRelease, msLeft, type SeatMessage } from '../src/client/lib/room';
 import type { RoomMessage, SeatView, Stats } from '../shared/types';
 
 const stats: Stats = { granted: 0, rejected: 0, expired: 0, sold: 0 };
 const seat = (id: string, status: SeatView['status'] = 'available', by: string | null = null): SeatView => ({
   id, priceCents: 1000, status, by,
 });
-const snapshot = (over: Partial<Extract<RoomMessage, { type: 'snapshot' }>> = {}): RoomMessage => ({
+const snapshot = (over: Partial<Extract<RoomMessage, { type: 'snapshot' }>> = {}): SeatMessage => ({
   type: 'snapshot',
   seats: [seat('a'), seat('b')],
   stats,
