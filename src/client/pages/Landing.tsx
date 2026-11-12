@@ -25,7 +25,7 @@ function HeroSeats() {
             width={0.76}
             height={0.76}
             rx={0.16}
-            stroke="var(--color-on-brand)"
+            stroke="var(--color-ink)"
             strokeWidth={0.07}
             className={taken ? 'hero-seat' : undefined}
             data-taken={taken || undefined}
@@ -58,7 +58,7 @@ export default function Landing() {
 
   return (
     <main>
-      <section className="bg-brand text-on-brand">
+      <section className="bg-[linear-gradient(180deg,var(--color-bg),var(--color-velvet)_70%)]">
         <div className={`${container} grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]`}>
           <div>
             <h1 className="display text-[clamp(2.5rem,7vw,5rem)]">Good seats go fast. Be faster.</h1>
@@ -82,10 +82,10 @@ export default function Landing() {
                   maxLength={100}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Artist, team, venue or city"
-                  className="h-13 w-full rounded-md border-2 border-on-brand bg-bg px-4 text-base text-ink placeholder:text-muted"
+                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base text-ink placeholder:text-muted"
                 />
               </label>
-              <button className="h-13 rounded-md bg-bg px-6 text-base font-bold text-ink transition-opacity duration-150 hover:opacity-85 active:opacity-75">
+              <button className="btn-primary h-13">
                 Find events
               </button>
             </form>

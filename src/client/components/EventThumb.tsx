@@ -4,9 +4,9 @@ import { dayOfMonth, monthAbbrev } from '../lib/format';
 // Poster colours for events that come without a picture.
 const POSTER: Record<EventType | 'none', string> = {
   concert: 'bg-brand text-on-brand',
-  sports: 'bg-accent text-bg',
+  sports: 'bg-velvet text-ink',
   theater: 'bg-surface text-brand ring-1 ring-inset ring-line',
-  comedy: 'bg-ink text-bg',
+  comedy: 'bg-bg text-ink ring-1 ring-inset ring-ink',
   none: 'bg-surface text-ink ring-1 ring-inset ring-line',
 };
 

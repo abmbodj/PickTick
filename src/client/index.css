@@ -1,22 +1,23 @@
 @import 'tailwindcss';
 
-/* Scene: someone on a phone in the evening, deciding what to go to. Mood: a
-   velvet-rope club, a spotlight on crushed magenta in a dark room. Neutral
-   near-black surfaces; the magenta and the event pictures carry the colour.
-   One family (Archivo); headlines use its wide cut. Seat states differ by
-   shape as well as colour. */
+/* Palette chosen by the owner: Obsidian Ink #151311, Velvet Curfew #4B262F,
+   Almond Hearth #EED3BA. Obsidian is the room, almond is the type and every
+   action, velvet is the warm layer between them (panels, sold seats, the
+   landing hero). The other values are tints and shades of those three, plus
+   one rose for warnings. Seat states differ by shape as well as colour. */
 @theme {
-  --color-bg: oklch(0.145 0 0);
-  --color-surface: oklch(0.205 0.008 355);
-  --color-line: oklch(0.33 0.012 355);
-  --color-ink: oklch(0.96 0.005 355);
-  --color-muted: oklch(0.74 0.015 355);
-  --color-brand: oklch(0.58 0.21 355);
-  --color-brand-strong: oklch(0.64 0.22 355);
-  --color-on-brand: oklch(0.99 0 0);
-  --color-accent: oklch(0.85 0.085 350);
-  --color-danger: oklch(0.82 0.14 65); /* amber, so warnings never read as the brand colour */
-  --color-sold: oklch(0.42 0.012 355);
+  --color-bg: #151311; /* Obsidian Ink */
+  --color-surface: #231b1b;
+  --color-line: #46333a;
+  --color-ink: #eed3ba; /* Almond Hearth */
+  --color-muted: #bca695;
+  --color-brand: #eed3ba;
+  --color-brand-strong: #f8e6d4;
+  --color-on-brand: #151311;
+  --color-velvet: #4b262f; /* Velvet Curfew */
+  --color-accent: #f5dfca;
+  --color-danger: #eb9aa9;
+  --color-sold: #4b262f;
   --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
@@ -91,7 +92,7 @@ h3 {
   }
   45%,
   90% {
-    fill: var(--color-on-brand);
+    fill: var(--color-ink);
   }
   100% {
     fill: transparent;
@@ -133,6 +134,6 @@ h3 {
     animation: none;
   }
   .hero-seat[data-taken] {
-    fill: var(--color-on-brand);
+    fill: var(--color-ink);
   }
 }

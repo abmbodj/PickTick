@@ -96,7 +96,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                       height={CELL}
                       rx={0.16}
                       strokeWidth={status === 'mine' ? 0.1 : 0.06}
-                      stroke={status === 'held' ? 'var(--color-muted)' : status === 'sold' ? 'var(--color-sold)' : 'var(--color-ink)'}
+                      stroke={status === 'held' ? 'var(--color-muted)' : status === 'sold' ? 'var(--color-line)' : 'var(--color-ink)'}
                       fill={
                         status === 'mine'
                           ? 'var(--color-brand)'
@@ -138,7 +138,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
           ['Available', 'border-2 border-ink bg-bg'],
           ['Yours', 'border-2 border-ink bg-brand'],
           ['Held by someone', 'border-2 border-muted bg-[repeating-linear-gradient(45deg,var(--color-muted)_0_2px,var(--color-bg)_2px_5px)]'],
-          ['Sold', 'border-2 border-sold bg-sold'],
+          ['Sold', 'border-2 border-line bg-sold'],
         ].map(([label, swatch]) => (
           <li key={label} className="flex items-center gap-2">
             <span className={`inline-block h-4 w-4 rounded-sm ${swatch}`} aria-hidden="true" />
