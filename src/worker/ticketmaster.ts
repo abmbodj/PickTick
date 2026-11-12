@@ -175,6 +175,36 @@ export async function tmSearch(
   }
 }
 
+// Search-as-you-type: Ticketmaster's suggest endpoint matches partial words ("mulan" finds
+// Mulaney), which the keyword search above does not. Events only, mapped like search results;
+// any failure gives none, so search simply works as before.
+// ponytail: one call of up to SUGGEST_SIZE events, so a 28-date tour may show as fewer dates
+// in the result card; its artist page still lists them all.
+const SUGGEST_SIZE = '20';
+export async function tmSuggest(apiKey: string | undefined, p: SearchParams): Promise<EventSummary[]> {
+  if (!apiKey || !p.q) return [];
+  const url = new URL(`${ROOT}/suggest.json`);
+  url.searchParams.set('keyword', p.q);
+  url.searchParams.set('countryCode', 'US');
+  url.searchParams.set('resource', 'events');
+  url.searchParams.set('size', SUGGEST_SIZE);
+  try {
+    const res = await cachedJson(url, apiKey, SEARCH_TTL);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { _embedded?: { events?: TmEvent[] } };
+    const first = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
+    return (data._embedded?.events ?? [])
+      .map(toSummary)
+      .filter((e) => e !== null)
+      .filter((e) => {
+        const day = e.startsAt.slice(0, 10);
+        return day >= (p.from ?? first) && (!p.to || day <= p.to) && (!p.type || e.type === p.type);
+      });
+  } catch {
+    return [];
+  }
+}
+
 // null when the event does not exist (or there is no key); throws when the API
 // cannot be reached, so an outage is not mistaken for a missing event.
 export async function tmGetEvent(apiKey: string | undefined, id: string): Promise<EventDetail | null> {

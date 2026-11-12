@@ -101,8 +101,27 @@ test('search sends the key, keyword, mapped type and date range', async () => {
 test('a repeated search is served from cache', async () => {
   const calls = stubApi(() => page([tmEvent()]));
   (await searchEvents(withKey, { q: 'cache check' })).events;
+  expect(calls).toHaveLength(2); // the search and its suggestions
   (await searchEvents(withKey, { q: 'cache check' })).events;
-  expect(calls).toHaveLength(1);
+  expect(calls).toHaveLength(2);
+});
+
+test('a partial word finds events through suggestions, after exact matches and without repeats', async () => {
+  const calls = stubApi((url) =>
+    url.pathname.endsWith('/suggest.json')
+      ? page([tmEvent({ id: 'exact' }), tmEvent({ id: 'partial', name: 'Mulaney: Live' })])
+      : page(url.searchParams.get('keyword') === 'mulan' ? [] : [tmEvent({ id: 'exact' })]),
+  );
+  const hits = (await searchEvents(withKey, { q: 'mulan' })).events;
+  expect(hits.map((e) => e.id)).toEqual(['tm-exact', 'tm-partial']);
+  const suggest = new URL(calls.find((c) => c.includes('/suggest.json'))!);
+  expect(Object.fromEntries(suggest.searchParams)).toMatchObject({ keyword: 'mulan', countryCode: 'US', resource: 'events' });
+  calls.length = 0;
+  const both = (await searchEvents(withKey, { q: 'mulaney' })).events;
+  expect(both.map((e) => e.id)).toEqual(['tm-exact', 'tm-partial']); // the exact match is not listed twice
+  calls.length = 0;
+  await searchEvents(withKey, { type: 'comedy', from: '2027-02-01' });
+  expect(calls.some((c) => c.includes('/suggest.json'))).toBe(false); // browsing without a word asks no suggestions
 });
 
 test('a failing, rate-limited or malformed API gives no events', async () => {

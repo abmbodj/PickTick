@@ -12,7 +12,7 @@ import type {
   Ticket,
 } from '../../shared/types';
 import { event, performer, userBooking, venue } from './db/schema';
-import { TM_PREFIX, tmGetEvent, tmPerformerEvents, tmSearch, type SearchParams } from './ticketmaster';
+import { TM_PREFIX, tmGetEvent, tmPerformerEvents, tmSearch, tmSuggest, type SearchParams } from './ticketmaster';
 
 export type { SearchParams };
 // The API key is optional: without it the site shows PickTick's own events only.
@@ -80,9 +80,15 @@ export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<Se
     if (near) own.sort((a, b) => (a.geo ? distance(near, a.geo) : Infinity) - (b.geo ? distance(near, b.geo) : Infinity));
     return { events: own, page, totalPages: 1 };
   }
-  const tm = await tmSearch(env.TICKETMASTER_API_KEY, p);
+  // A typed search also asks for suggestions, which match partial words; they follow the exact matches.
+  const [tm, suggested] = await Promise.all([
+    tmSearch(env.TICKETMASTER_API_KEY, p),
+    p.q && page === 0 ? tmSuggest(env.TICKETMASTER_API_KEY, p) : [],
+  ]);
+  const seen = new Set(tm.events.map((e) => e.id));
+  const events = [...tm.events, ...suggested.filter((e) => !seen.has(e.id))];
   // Every card on the live site carries a picture, so an event without one is left out.
-  return { events: tm.events.filter((e) => e.imageUrl), page, totalPages: tm.totalPages };
+  return { events: events.filter((e) => e.imageUrl), page, totalPages: tm.totalPages };
 }
 
 async function searchOwn(d1: D1Database, p: SearchParams): Promise<EventSummary[]> {
