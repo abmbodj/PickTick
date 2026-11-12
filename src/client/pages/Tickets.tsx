@@ -53,7 +53,7 @@ export default function Tickets() {
         {tickets.data && tickets.data.length > 0 && (
           <ul className="stagger space-y-4">
             {tickets.data.map((t) => (
-              <li key={t.bookingId} className="flex overflow-hidden rounded-lg border border-line bg-surface">
+              <li key={t.bookingId} className="ticket flex overflow-hidden rounded-lg bg-surface [--stub:7rem] sm:[--stub:8rem]">
                 <EventThumb imageUrl={t.imageUrl} startsAt={t.startsAt} className="hidden w-40 self-stretch rounded-none sm:block" />
                 <div className="min-w-0 flex-1 p-4">
                   <h2 className="text-lg font-bold [overflow-wrap:anywhere]">
@@ -76,11 +76,14 @@ export default function Tickets() {
                     <CancelTicket eventId={t.eventId} bookingId={t.bookingId} seats={t.seatIds.length} />
                   </div>
                 </div>
-                <div className="flex flex-col items-end justify-between border-l border-dashed border-muted p-4">
-                  <span className="font-mono text-lg font-bold tabular-nums">{money(t.totalCents)}</span>
+                <div className="perforation flex w-28 shrink-0 sm:w-32 flex-col justify-between bg-brand py-4 pr-4 text-on-brand">
+                  <div>
+                    <p className="text-xs font-bold tracking-wider uppercase">Admit {t.seatIds.length}</p>
+                    <p className="font-mono text-lg font-bold tabular-nums">{money(t.totalCents)}</p>
+                  </div>
                   <Link
                     to={`/event/${t.eventId}/booking/${t.bookingId}`}
-                    className="text-sm link"
+                    className="inline-flex min-h-11 items-end text-sm font-semibold underline underline-offset-2 hover:no-underline"
                   >
                     View ticket
                   </Link>

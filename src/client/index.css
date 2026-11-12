@@ -443,6 +443,24 @@ h3 {
   animation: ticket-print 800ms var(--ease-out-expo) 150ms backwards;
 }
 
+/* A real ticket: two half-moon bites where the stub tears off, `--stub` in from the right edge. */
+.ticket {
+  --notch: 0.625rem;
+  --cut: calc(100% - var(--stub));
+  mask:
+    radial-gradient(circle at var(--cut) 0, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) top / 100% 51% no-repeat,
+    radial-gradient(circle at var(--cut) 100%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) bottom / 100% 51% no-repeat;
+}
+
+/* The tear line: a column of punched holes down the stub's edge. */
+.perforation {
+  background-image: radial-gradient(circle, var(--color-bg) 1.5px, #0000 2px);
+  background-position: -2px center;
+  background-size: 4px 8px;
+  background-repeat: repeat-y;
+  padding-left: 0.75rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
