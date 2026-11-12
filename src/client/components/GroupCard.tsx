@@ -27,8 +27,9 @@ export default function GroupCard({ group: g }: { group: EventGroup }) {
         </>
       )}
       <article className="stack-top relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface">
+        {/* overflow-hidden clips the hover zoom, so the picture never shows below its fade. */}
         {g.imageUrl ? (
-          <div className="relative aspect-[4/3]">
+          <div className="relative aspect-[4/3] overflow-hidden">
             <img src={g.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
             <div className="image-blur" />
             <div className="image-fade" />

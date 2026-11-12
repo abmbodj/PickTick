@@ -73,6 +73,10 @@ export default function HeroBooking() {
     enabled: many,
   });
   const wanted = group ? (dateId ?? group.nearEventId) : null;
+  // Ticketmaster sometimes lists one show twice; a tile per show is enough.
+  const dates = (performer.data?.events ?? []).filter(
+    (d, i, all) => all.findIndex((o) => o.startsAt === d.startsAt && o.venueName === d.venueName) === i,
+  );
 
   // The event on the map. It follows the search, except while seats are held:
   // then it stays, so a hold is never dropped by typing.
@@ -252,7 +256,7 @@ export default function HeroBooking() {
                 // A strip of dates that scrolls sideways; the time tells two shows on one day apart.
                 <div className="w-full overflow-x-auto pb-1">
                   <ul className="mx-auto flex w-max snap-x gap-2" aria-label="Dates">
-                    {performer.data.events.slice(0, MAX_DATES).map((d) => (
+                    {dates.slice(0, MAX_DATES).map((d) => (
                       <li key={d.id} className="snap-start">
                         <button
                           className={`${choice} group flex w-28 flex-col items-center px-2 py-2 text-center`}
@@ -267,10 +271,10 @@ export default function HeroBooking() {
                         </button>
                       </li>
                     ))}
-                    {performer.data.events.length > MAX_DATES && (
+                    {dates.length > MAX_DATES && (
                       <li className="flex items-center">
                         <Link to={`/artist/${performer.data.id}`} className="link px-3 text-sm whitespace-nowrap">
-                          All {performer.data.events.length} dates
+                          All {dates.length} dates
                         </Link>
                       </li>
                     )}
