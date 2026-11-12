@@ -33,7 +33,7 @@ export default function Stats({
         <h2 className="font-bold">Live seat activity</h2>
         <span className="flex items-center gap-2 text-sm font-semibold" role="status">
           <span
-            className={`inline-block h-2.5 w-2.5 rounded-full ${connected ? 'bg-accent' : 'animate-pulse bg-danger'}`}
+            className={`relative inline-block h-2.5 w-2.5 rounded-full ${connected ? 'live-dot bg-accent' : 'animate-pulse bg-danger'}`}
             aria-hidden="true"
           />
           {connected ? 'Live' : 'Reconnecting'}

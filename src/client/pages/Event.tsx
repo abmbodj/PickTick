@@ -95,7 +95,7 @@ export default function Event() {
       </div>
       {e.description && <p className="mt-4 max-w-[65ch]">{e.description}</p>}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div>
           <label className="block max-w-xs">
             <span className="mb-1 block text-sm font-semibold">Your name, shown on seats you hold</span>

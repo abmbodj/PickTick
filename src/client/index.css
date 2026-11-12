@@ -496,6 +496,26 @@ h3 {
   @apply inline-flex size-11 items-center justify-center rounded-full text-xl text-ink transition-colors duration-150 hover:bg-surface;
 }
 
+/* The Live dot breathes: a ring swells out of it and fades, like a broadcast light. */
+@keyframes live-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: live-ring 1.6s var(--ease-out-quart) infinite;
+}
+
 /* The tear line: a column of punched holes down the stub's edge. */
 .perforation {
   background-image: radial-gradient(circle, var(--color-bg) 1.5px, #0000 2px);
