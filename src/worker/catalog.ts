@@ -186,6 +186,15 @@ const pickImage = (events: EventSummary[]) =>
   events.find((e) => e.imageUrl)?.imageUrl ??
   null;
 
+// The event whose venue is closest to `near`, or null when no venue's position is known.
+// Ties go to the earlier event in the list.
+export function nearestEvent<E extends EventSummary>(events: E[], near: [number, number]): E | null {
+  let best: E | null = null;
+  for (const e of events)
+    if (e.geo && (!best?.geo || distance(near, e.geo) < distance(near, best.geo))) best = e;
+  return best;
+}
+
 // Collapses a result list so a tour with thirty dates is one entry, not
 // thirty. Groups keep the order their first event appeared in. `near` is the
 // visitor's rough position; each group points at its date closest to it.
@@ -199,12 +208,7 @@ export function groupEvents(events: EventSummary[], near?: [number, number] | nu
   return [...byKey.values()].map((list) => {
     const sorted = [...list].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     const first = sorted[0];
-    // Sorted soonest first, so ties and unknown venues fall back to the soonest.
-    const nearest = near
-      ? sorted.reduce((best, e) =>
-          e.geo && (!best.geo || distance(near, e.geo) < distance(near, best.geo)) ? e : best,
-        )
-      : first;
+    const nearest = (near && nearestEvent(sorted, near)) || first;
     return {
       key: list[0].performerId ?? list[0].id,
       performerId: list[0].performerId,
@@ -255,5 +259,13 @@ export async function getPerformer(env: CatalogEnv, id: string): Promise<Perform
     .orderBy(asc(event.startsAt));
   if (events.length === 0) return null;
   const imageUrl = env.TICKETMASTER_API_KEY ? null : mockImage(events[0].type);
-  return { id, name: row.name, blurb: row.blurb, type: events[0].type, source: 'picktick', imageUrl, events };
+  return {
+    id,
+    name: row.name,
+    blurb: row.blurb,
+    type: events[0].type,
+    source: 'picktick',
+    imageUrl,
+    events: events.map((e) => ({ ...e, geo: CITY_GEO[e.city] ?? null })),
+  };
 }

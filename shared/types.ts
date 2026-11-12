@@ -96,4 +96,5 @@ export type Performer = {
   source: 'picktick' | 'ticketmaster';
   imageUrl: string | null;
   events: EventSummary[];
+  nearEventId?: string | null; // the date closest to the visitor, when we can tell
 };

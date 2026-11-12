@@ -1,7 +1,7 @@
 import { env, SELF } from 'cloudflare:test';
 import { afterEach, expect, test, vi } from 'vitest';
 import type { EventSummary, Ticket } from '../shared/types';
-import { getEvent, getPerformer, groupEvents, searchEvents } from '../src/worker/catalog';
+import { getEvent, getPerformer, groupEvents, nearestEvent, searchEvents } from '../src/worker/catalog';
 
 const withKey = { ...env, TICKETMASTER_API_KEY: 'k-123' };
 const noKey = { ...env, TICKETMASTER_API_KEY: undefined };
@@ -446,4 +446,6 @@ test("a group points at the date nearest the visitor, or the soonest when it can
   ];
   expect(groupEvents(dates, [39.95, -75.17])[0].nearEventId).toBe('nyc'); // from Philadelphia
   expect(groupEvents(dates)[0].nearEventId).toBe('la');
+  expect(nearestEvent(dates, [34.0, -118.0])?.id).toBe('la'); // the artist page's pick, from LA
+  expect(nearestEvent([dates[1]], [39.95, -75.17])).toBeNull(); // no venue position known
 });

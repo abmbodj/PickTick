@@ -6,6 +6,7 @@ import {
   clearTickets,
   getEvent,
   getPerformer,
+  nearestEvent,
   groupEvents,
   listEventIds,
   listTickets,
@@ -32,22 +33,28 @@ const searchQuery = z.object({
   page: z.coerce.number().int().min(0).max(MAX_PAGES - 1).optional(),
 });
 
+// The visitor's rough position: Cloudflare's own estimate from the request, so no permission
+// prompt, and city-level at best. Null when Cloudflare gives none.
+function visitorAt(req: Request): [number, number] | null {
+  const cf = req.cf as { latitude?: string; longitude?: string } | undefined;
+  const lat = Number(cf?.latitude ?? NaN);
+  const lng = Number(cf?.longitude ?? NaN);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+}
+
 app.get('/api/events/search', async (c) => {
   const parsed = searchQuery.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid search parameters' }, 400);
   const { events, page, totalPages } = await searchEvents(c.env, parsed.data);
-  // Cloudflare's own estimate from the request; no permission prompt, city-level at best.
-  const cf = c.req.raw.cf as { latitude?: string; longitude?: string } | undefined;
-  const lat = Number(cf?.latitude ?? NaN);
-  const lng = Number(cf?.longitude ?? NaN);
-  const near: [number, number] | null = Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
-  return c.json({ groups: groupEvents(events, near), page, totalPages });
+  return c.json({ groups: groupEvents(events, visitorAt(c.req.raw)), page, totalPages });
 });
 
 app.get('/api/performers/:id', async (c) => {
   try {
     const performer = await getPerformer(c.env, c.req.param('id'));
-    return performer ? c.json(performer) : c.json({ error: 'Nothing on sale for this performer' }, 404);
+    if (!performer) return c.json({ error: 'Nothing on sale for this performer' }, 404);
+    const near = visitorAt(c.req.raw);
+    return c.json({ ...performer, nearEventId: (near && nearestEvent(performer.events, near)?.id) || null });
   } catch {
     return c.json({ error: 'These dates could not be loaded right now. Try again in a moment.' }, 502);
   }

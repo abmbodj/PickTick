@@ -43,6 +43,9 @@ export default function Artist() {
   }
 
   const p = q.data;
+  // The date closest to the visitor goes first; the rest stay soonest first.
+  const near = p.events.find((e) => e.id === p.nearEventId);
+  const events = near ? [near, ...p.events.filter((e) => e !== near)] : p.events;
   return (
     <main className="py-6">
       <Link to="/events" className="link text-sm">
@@ -72,7 +75,7 @@ export default function Artist() {
       {p.blurb && <p className="mt-5 max-w-[65ch] text-muted">{p.blurb}</p>}
 
       <ul className="stagger mt-6 border-t border-line">
-        {p.events.map((e) => (
+        {events.map((e) => (
           <li key={e.id} className="border-b border-line">
             <Link
               to={`/event/${e.id}`}
@@ -88,6 +91,12 @@ export default function Artist() {
                 </p>
                 <h2 className="font-bold [overflow-wrap:anywhere]">
                   {e.city || e.venueName}
+                  {e === near && <span className="sr-only">, </span>}
+                  {e === near && (
+                    <span className="ml-2 inline-block rounded-full bg-brand px-2 py-0.5 align-[0.1em] text-xs font-bold text-on-brand">
+                      Closest to you
+                    </span>
+                  )}
                   <span className="sr-only">, {monthAbbrev(e.startsAt)} {dayOfMonth(e.startsAt)}</span>
                 </h2>
                 <p className="text-sm text-muted [overflow-wrap:anywhere]">
