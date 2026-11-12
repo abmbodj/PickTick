@@ -211,15 +211,20 @@ export async function tmSearch(
 const SUGGEST_SIZE = '20';
 export async function tmSuggest(apiKey: string | undefined, p: SearchParams): Promise<EventSummary[]> {
   if (!apiKey || !p.q) return [];
-  const url = new URL(`${ROOT}/suggest.json`);
+  const url = new URL(`${ROOT}/suggest`);
   url.searchParams.set('keyword', p.q);
   url.searchParams.set('countryCode', 'US');
   url.searchParams.set('resource', 'events');
   url.searchParams.set('size', SUGGEST_SIZE);
   try {
     const res = await cachedJson(url, apiKey, SEARCH_TTL);
-    if (!res.ok) return [];
-    const data = (await res.json()) as { _embedded?: { events?: TmEvent[] } };
+    if (!res.ok) {
+      console.warn(`suggest: Ticketmaster answered ${res.status}`);
+      return [];
+    }
+    const data = (await res.json()) as { _embedded?: Record<string, TmEvent[]> };
+    // ponytail: shape check while suggestions are new; drop once confirmed live
+    console.log(`suggest: ${Object.entries(data._embedded ?? {}).map(([k, v]) => `${k}=${v.length}`).join(' ') || 'nothing'}`);
     const first = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
     return (data._embedded?.events ?? [])
       .map(toSummary)
