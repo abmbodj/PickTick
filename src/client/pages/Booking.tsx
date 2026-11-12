@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router';
 import { getBooking, getEvent } from '../lib/api';
-import { eventDay, eventTime, money, seatLabel } from '../lib/format';
+import TicketCard from '../components/TicketCard';
 
 export default function Booking() {
   const { id = '', bookingId = '' } = useParams();
@@ -42,28 +42,9 @@ export default function Booking() {
         {b.seatIds.length === 1 ? ' it' : ' them'}.
       </p>
 
-      <article className="ticket-print mt-6 max-w-md rounded-lg border border-line bg-surface">
-        <div className="border-b border-dashed border-muted p-4">
-          <h2 className="text-lg font-bold">{e.name}</h2>
-          <p className="mt-1 text-sm text-muted">
-            {eventDay(e.startsAt)} at {eventTime(e.startsAt)}
-            <br />
-            {e.venueName}
-            {e.city && `, ${e.city}`}
-          </p>
-        </div>
-        <ul className="stagger divide-y divide-line px-4 [--i:6]">
-          {b.seatIds.map((seatId) => (
-            <li key={seatId} className="py-3 font-semibold">
-              {seatLabel(seatId)}
-            </li>
-          ))}
-        </ul>
-        <div className="flex items-baseline justify-between border-t border-line p-4">
-          <span className="text-sm text-muted">Total</span>
-          <span className="font-mono text-xl font-bold tabular-nums">{money(b.totalCents)}</span>
-        </div>
-      </article>
+      <div className="mt-6">
+        <TicketCard event={e} booking={b} />
+      </div>
 
       <p className="mt-3 max-w-md text-sm text-muted">
         A reservation only. No payment was taken and no real ticket is issued.

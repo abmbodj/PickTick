@@ -35,7 +35,12 @@ app.get('/api/events/search', async (c) => {
   const parsed = searchQuery.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid search parameters' }, 400);
   const { events, page, totalPages } = await searchEvents(c.env, parsed.data);
-  return c.json({ groups: groupEvents(events), page, totalPages });
+  // Cloudflare's own estimate from the request; no permission prompt, city-level at best.
+  const cf = c.req.raw.cf as { latitude?: string; longitude?: string } | undefined;
+  const lat = Number(cf?.latitude ?? NaN);
+  const lng = Number(cf?.longitude ?? NaN);
+  const near: [number, number] | null = Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+  return c.json({ groups: groupEvents(events, near), page, totalPages });
 });
 
 app.get('/api/performers/:id', async (c) => {

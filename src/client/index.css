@@ -320,8 +320,35 @@ h3 {
     opacity: 0;
   }
 }
-.page-in {
+.page-in,
+.fade-in {
   animation: fade 260ms ease-out backwards;
+}
+
+/* The map keeps its seats when the layout changes: each slides to its new
+   place, and the map grows or shrinks to fit. Height is the one layout
+   property animated on the site; a jump here would break the illusion. */
+.seat-slot {
+  transition: transform 600ms var(--ease-out-expo);
+}
+.seat-stage {
+  transition: height 500ms var(--ease-out-expo);
+}
+/* In the hero, seats arriving from a search flip over like a departure board. */
+.hero-stage .seat {
+  animation: seat-flip 420ms var(--ease-out-quart) calc(var(--row, 0) * 22ms) backwards;
+}
+.after-hero {
+  transition: opacity 300ms ease-out;
+}
+.hero-active + .after-hero {
+  opacity: 0.4;
+}
+/* The checkout bar is fixed on small screens; keep the footer clear of it. */
+@media (max-width: 63.99rem) {
+  body:has(.checkout-in) footer {
+    padding-bottom: 9rem;
+  }
 }
 .rise,
 .stagger > * {

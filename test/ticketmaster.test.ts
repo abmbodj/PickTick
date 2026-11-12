@@ -73,6 +73,7 @@ test('with a key, search lists own events then API events, and maps fields', asy
     performerId: 'tm-K8vZ9171ob7',
     source: 'ticketmaster',
     imageUrl: 'https://s1.ticketm.net/a_16_9.jpg',
+    geo: null, // the fixture's venue has no coordinates
   });
   expect(hits.at(-1)).toMatchObject({ id: 'tm-late', startsAt: '2027-12-31T00:00:00Z' });
   expect(calls).toHaveLength(1);
@@ -440,4 +441,14 @@ test("a group prefers the act's own picture over Ticketmaster's generic category
     summary({ id: 'p2', startsAt: '2027-01-11T20:00:00Z', imageUrl: 'https://s1.ticketm.net/dam/a/24d/artist_16_9.jpg' }),
   ]);
   expect(g.imageUrl).toBe('https://s1.ticketm.net/dam/a/24d/artist_16_9.jpg');
+});
+
+test("a group points at the date nearest the visitor, or the soonest when it can't tell", () => {
+  const dates = [
+    summary({ id: 'la', startsAt: '2027-01-10T20:00:00Z', geo: [34.05, -118.24] }),
+    summary({ id: 'tba', startsAt: '2027-01-11T20:00:00Z', geo: null }),
+    summary({ id: 'nyc', startsAt: '2027-01-12T20:00:00Z', geo: [40.71, -74.0] }),
+  ];
+  expect(groupEvents(dates, [39.95, -75.17])[0].nearEventId).toBe('nyc'); // from Philadelphia
+  expect(groupEvents(dates)[0].nearEventId).toBe('la');
 });

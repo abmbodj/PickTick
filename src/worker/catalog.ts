@@ -30,6 +30,28 @@ const summary = {
   imageUrl: sql<null>`NULL`,
 };
 
+// ponytail: PickTick's own venues are a handful of fixed cities, so their
+// coordinates live here. Give `venue` lat/lng columns if venues become data.
+const CITY_GEO: Record<string, [number, number]> = {
+  Portland: [45.52, -122.68],
+  Chicago: [41.88, -87.63],
+  'New Orleans': [29.95, -90.07],
+  Baltimore: [39.29, -76.61],
+  Pittsburgh: [40.44, -80.0],
+  Minneapolis: [44.98, -93.27],
+  Austin: [30.27, -97.74],
+};
+const withGeo = <T extends { city: string }>(rows: T[]) => rows.map((r) => ({ ...r, geo: CITY_GEO[r.city] ?? null }));
+
+// Great-circle distance in km.
+function distance([lat1, lng1]: [number, number], [lat2, lng2]: [number, number]): number {
+  const rad = Math.PI / 180;
+  const a =
+    Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+
 // Turns free text into a safe FTS5 query: every word quoted, last word a prefix.
 // Returns null when the text has no searchable words.
 function ftsQuery(q: string): string | null {
@@ -61,13 +83,15 @@ async function searchOwn(d1: D1Database, p: SearchParams): Promise<EventSummary[
   if (p.to) where.push(sql`substr(${event.startsAt}, 1, 10) <= ${p.to}`);
   if (!p.from && !p.to) where.push(gte(event.startsAt, new Date().toISOString()));
 
-  return drizzle(d1)
-    .select(summary)
-    .from(event)
-    .innerJoin(venue, eq(event.venueId, venue.id))
-    .innerJoin(performer, eq(event.performerId, performer.id))
-    .where(and(...where))
-    .orderBy(asc(event.startsAt));
+  return withGeo(
+    await drizzle(d1)
+      .select(summary)
+      .from(event)
+      .innerJoin(venue, eq(event.venueId, venue.id))
+      .innerJoin(performer, eq(event.performerId, performer.id))
+      .where(and(...where))
+      .orderBy(asc(event.startsAt)),
+  );
 }
 
 export async function getEvent(env: CatalogEnv, id: string): Promise<EventDetail | null> {
@@ -144,8 +168,9 @@ const pickImage = (events: EventSummary[]) =>
   null;
 
 // Collapses a result list so a tour with thirty dates is one entry, not
-// thirty. Groups keep the order their first event appeared in.
-export function groupEvents(events: EventSummary[]): EventGroup[] {
+// thirty. Groups keep the order their first event appeared in. `near` is the
+// visitor's rough position; each group points at its date closest to it.
+export function groupEvents(events: EventSummary[], near?: [number, number] | null): EventGroup[] {
   const byKey = new Map<string, EventSummary[]>();
   for (const e of events) {
     // By name, not id: Ticketmaster sometimes lists one act under two ids.
@@ -155,6 +180,12 @@ export function groupEvents(events: EventSummary[]): EventGroup[] {
   return [...byKey.values()].map((list) => {
     const sorted = [...list].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     const first = sorted[0];
+    // Sorted soonest first, so ties and unknown venues fall back to the soonest.
+    const nearest = near
+      ? sorted.reduce((best, e) =>
+          e.geo && (!best.geo || distance(near, e.geo) < distance(near, best.geo)) ? e : best,
+        )
+      : first;
     return {
       key: list[0].performerId ?? list[0].id,
       performerId: list[0].performerId,
@@ -165,6 +196,7 @@ export function groupEvents(events: EventSummary[]): EventGroup[] {
       eventCount: sorted.length,
       nextStartsAt: first.startsAt,
       firstEventId: first.id,
+      nearEventId: nearest.id,
       venueName: first.venueName,
       cities: [...new Set(sorted.map((e) => e.city).filter(Boolean))],
     };

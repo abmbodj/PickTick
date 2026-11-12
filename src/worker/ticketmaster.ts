@@ -23,7 +23,7 @@ type TmEvent = {
   priceRanges?: { min?: number; max?: number }[];
   seatmap?: { staticUrl?: string };
   _embedded?: {
-    venues?: { name?: string; city?: { name?: string } }[];
+    venues?: { name?: string; city?: { name?: string }; location?: { latitude?: string; longitude?: string } }[];
     attractions?: { id?: string; name?: string }[];
   };
 };
@@ -58,6 +58,8 @@ function toSummary(e: TmEvent): EventSummary | null {
   const date = e.dates?.start?.localDate;
   if (!e.id || !e.name || !date) return null; // no announced date: leave it out
   const venue = e._embedded?.venues?.[0];
+  const lat = Number(venue?.location?.latitude ?? NaN);
+  const lng = Number(venue?.location?.longitude ?? NaN);
   return {
     id: TM_PREFIX + e.id,
     name: e.name,
@@ -70,6 +72,7 @@ function toSummary(e: TmEvent): EventSummary | null {
     performerId: e._embedded?.attractions?.[0]?.id ? TM_PREFIX + e._embedded.attractions[0].id : null,
     source: 'ticketmaster',
     imageUrl: imageOf(e),
+    geo: Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null,
   };
 }
 

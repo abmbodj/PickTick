@@ -1,5 +1,20 @@
+import type { ReactNode } from 'react';
 import { HOLD_MS, MAX_HOLDS } from '../../../shared/types';
 import { clock, money, seatLabel } from '../lib/format';
+import type { Notice as NoticeData } from '../lib/useBooking';
+
+// One sentence about what just happened, where it happened. Errors shake once.
+export function Notice({ notice }: { notice: NoticeData | null }) {
+  if (!notice) return null;
+  return (
+    <p
+      key={notice.text}
+      className={`${notice.kind === 'error' ? 'notice-error border-danger text-danger' : 'notice-in border-muted'} rounded-md border px-3 py-2 text-sm font-semibold`}
+    >
+      {notice.text}
+    </p>
+  );
+}
 
 type Props = {
   seats: { id: string; priceCents: number }[];
@@ -7,9 +22,10 @@ type Props = {
   paying: boolean;
   onRelease: (seatId: string) => void;
   onPay: () => void;
+  children?: ReactNode; // extra fields above the button, such as the name
 };
 
-export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay }: Props) {
+export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay, children }: Props) {
   const total = seats.reduce((sum, s) => sum + s.priceCents, 0);
   const urgent = msLeft !== null && msLeft <= 30_000;
 
@@ -47,6 +63,7 @@ export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay 
               </li>
             ))}
           </ul>
+          {children}
           <div className="mt-3 flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:gap-3">
             <p className="text-sm whitespace-nowrap" role="timer" aria-live="off">
               <span className={`font-mono text-xl font-bold tabular-nums ${urgent ? 'text-danger' : ''}`}>

@@ -1,74 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { MAX_HOLDS, NICKNAME_MAX } from '../../../shared/types';
-import CheckoutPanel from '../components/CheckoutPanel';
+import { NICKNAME_MAX } from '../../../shared/types';
+import CheckoutPanel, { Notice } from '../components/CheckoutPanel';
 import SeatMap from '../components/SeatMap';
 import Stats from '../components/Stats';
-import { ApiError, getEvent, holdSeat, payForHolds, releaseSeat } from '../lib/api';
+import { ApiError, getEvent } from '../lib/api';
 import { eventDay, eventTime } from '../lib/format';
-import { msLeft } from '../lib/room';
-import { useEventRoom } from '../lib/useEventRoom';
-
-const NAME_KEY = 'picktick.nickname';
-type Notice = { kind: 'error' | 'info'; text: string };
-
-function useNow(active: boolean): number {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!active) return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
-  }, [active]);
-  return now;
-}
+import { useBooking } from '../lib/useBooking';
 
 export default function Event() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const event = useQuery({ queryKey: ['event', id], queryFn: () => getEvent(id) });
-  // Connect after the event has loaded, so the identity cookie already exists.
-  const room = useEventRoom(id, event.data !== undefined);
-
-  const [nickname, setNickname] = useState(() => localStorage.getItem(NAME_KEY) ?? '');
   const nameInput = useRef<HTMLInputElement>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [paying, setPaying] = useState(false);
-  // One id per checkout, so a double tap on Pay cannot create two bookings.
-  const bookingId = useRef(crypto.randomUUID());
-
-  const mine = room.state?.mine.seatIds ?? [];
-  const now = useNow(mine.length > 0);
-  const left = room.state ? msLeft(room.state, now) : null;
+  // The room connects after the event has loaded, so the identity cookie already exists.
+  const { room, mine, left, notice, busy, paying, nickname, setNickname, heldSeats, onSeat, release, pay } =
+    useBooking(id, event.data !== undefined, { onNeedName: () => nameInput.current?.focus() });
 
   const eventName = event.data?.name;
   useEffect(() => {
     if (eventName) document.title = `${eventName} · PickTick`;
   }, [eventName]);
-
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 5000);
-    return () => clearTimeout(t);
-  }, [notice]);
-
-  // The hold can run out two ways: this device's countdown reaches zero, or the
-  // server takes the seats back first. Either way, say what happened.
-  const EXPIRED: Notice = {
-    kind: 'error',
-    text: 'Your hold ran out, so those seats are back on sale. Pick again.',
-  };
-  useEffect(() => {
-    if (left !== 0 || mine.length === 0) return;
-    room.released(mine);
-    setNotice(EXPIRED);
-  }, [left]); // eslint-disable-line react-hooks/exhaustive-deps
-  const expiredAt = room.state?.expiredAt ?? null;
-  useEffect(() => {
-    if (expiredAt !== null) setNotice(EXPIRED);
-  }, [expiredAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!event.data && event.isPending)
     return (
@@ -100,73 +53,10 @@ export default function Event() {
     );
 
   const e = event.data;
-  const name = nickname.trim();
-
-  async function onSeat(seatId: string) {
-    if (busy) return;
-    if (!room.state) {
-      setNotice({ kind: 'info', text: 'Still connecting to the live seat map. Try again in a moment.' });
-      return;
-    }
-    if (mine.includes(seatId)) return release(seatId);
-    if (!name) {
-      nameInput.current?.focus();
-      setNotice({ kind: 'info', text: 'Add your name first, so the room can see who holds the seat.' });
-      return;
-    }
-    setBusy(seatId);
-    try {
-      const { expiresAt } = await holdSeat(id, seatId, name);
-      room.held(seatId, expiresAt);
-      setNotice(null);
-    } catch (err) {
-      const status = err instanceof ApiError ? err.status : 0;
-      setNotice({
-        kind: 'error',
-        text:
-          status === 409
-            ? 'Someone got that seat first. Try another.'
-            : status === 422
-              ? `You can hold up to ${MAX_HOLDS} seats. Release one to pick another.`
-              : err instanceof Error
-                ? err.message
-                : 'That did not work. Try again.',
-      });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function release(seatId: string) {
-    setBusy(seatId);
-    try {
-      await releaseSeat(id, seatId);
-    } catch {
-      // Already expired or released: the seat is free either way.
-    } finally {
-      room.released([seatId]);
-      setBusy(null);
-    }
-  }
-
   async function onPay() {
-    setPaying(true);
-    try {
-      const booking = await payForHolds(id, bookingId.current, name || 'Guest');
-      navigate(`/event/${id}/booking/${booking.id}`);
-    } catch (err) {
-      setNotice({
-        kind: 'error',
-        text: err instanceof Error ? err.message : 'The reservation did not go through. Try again.',
-      });
-      setPaying(false);
-    }
+    const booking = await pay();
+    if (booking) navigate(`/event/${id}/booking/${booking.id}`);
   }
-
-  const heldSeats = mine.map((seatId) => ({
-    id: seatId,
-    priceCents: room.state?.seats[seatId]?.priceCents ?? 0,
-  }));
 
   return (
     <main className="py-6 pb-10">
@@ -216,24 +106,12 @@ export default function Event() {
               value={nickname}
               maxLength={NICKNAME_MAX}
               autoComplete="nickname"
-              onChange={(ev) => {
-                setNickname(ev.target.value);
-                localStorage.setItem(NAME_KEY, ev.target.value);
-              }}
+              onChange={(ev) => setNickname(ev.target.value)}
             />
           </label>
 
           <div className="mt-3 min-h-11" aria-live="assertive">
-            {notice && (
-              <p
-                key={notice.text}
-                className={`${notice.kind === 'error' ? 'notice-error' : 'notice-in'} rounded-md border px-3 py-2 text-sm font-semibold ${
-                  notice.kind === 'error' ? 'border-danger text-danger' : 'border-muted'
-                }`}
-              >
-                {notice.text}
-              </p>
-            )}
+            <Notice notice={notice} />
           </div>
 
           <div className="mt-1">

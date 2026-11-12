@@ -23,6 +23,7 @@ export type EventSummary = {
   performerId: string | null; // null when the event has no named performer
   source: 'picktick' | 'ticketmaster';
   imageUrl: string | null;
+  geo?: [number, number] | null; // venue latitude and longitude, when known
 };
 export const PAGE_SIZE = 100; // events fetched per page, before grouping by performer
 export const MAX_PAGES = 10; // the Ticketmaster API stops at 1000 results
@@ -82,6 +83,7 @@ export type EventGroup = {
   eventCount: number;
   nextStartsAt: string;
   firstEventId: string; // the soonest event
+  nearEventId: string; // the date closest to the visitor; the soonest when we cannot tell
   venueName: string; // of the soonest event
   cities: string[]; // distinct, soonest first
 };

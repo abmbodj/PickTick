@@ -5,9 +5,11 @@ import { applyHold, applyMessage, applyRelease, type RoomState } from './room';
 type Action =
   | { t: 'message'; msg: RoomMessage; now: number }
   | { t: 'hold'; seatId: string; expiresAt: number }
-  | { t: 'release'; seatIds: string[] };
+  | { t: 'release'; seatIds: string[] }
+  | { t: 'reset' };
 
 function reducer(state: RoomState | null, a: Action): RoomState | null {
+  if (a.t === 'reset') return null;
   if (a.t === 'message') return applyMessage(state, a.msg, a.now);
   if (!state) return state;
   if (a.t === 'hold') return applyHold(state, a.seatId, a.expiresAt);
@@ -22,6 +24,9 @@ export function useEventRoom(eventId: string, enabled: boolean) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+    // Another event's seats must not linger while this one connects.
+    dispatch({ t: 'reset' });
+    setConnected(false);
     if (!enabled) return;
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/events/${encodeURIComponent(eventId)}/live`;
     let ws: WebSocket | null = null;

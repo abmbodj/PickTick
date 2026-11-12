@@ -1,0 +1,271 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { NICKNAME_MAX, type Booking, type EventDetail } from '../../../shared/types';
+import { container } from '../App';
+import { getEvent, getPerformer, searchEvents } from '../lib/api';
+import { eventDay, eventTime, shortDay } from '../lib/format';
+import { useBooking } from '../lib/useBooking';
+import { useDebounced } from '../lib/useDebounced';
+import CheckoutPanel, { Notice } from './CheckoutPanel';
+import { LogoMark } from './Logo';
+import SeatMap from './SeatMap';
+import TicketCard from './TicketCard';
+
+const MAX_MATCHES = 5;
+const MAX_DATES = 8;
+const chip =
+  'chip inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm font-semibold hover:border-muted aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-bg disabled:cursor-not-allowed disabled:opacity-50';
+
+// The landing hero. Typing turns its block of seats into the best match's
+// live seat map, and the whole booking happens here: tap, name, reserve.
+export default function HeroBooking() {
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const term = useDebounced(q.trim(), 250);
+  const searching = term.length >= 2;
+  const search = useQuery({
+    queryKey: ['search', { q: term }, 0],
+    queryFn: () => searchEvents({ q: term }),
+    enabled: searching,
+    placeholderData: keepPreviousData, // the map stays put while the next letters are looked up
+  });
+  const groups = searching ? (search.data?.groups ?? []).slice(0, MAX_MATCHES) : [];
+
+  // Which match, and which of its dates. A new search starts from the top again.
+  const [pick, setPick] = useState(0);
+  const [dateId, setDateId] = useState<string | null>(null);
+  useEffect(() => {
+    setPick(0);
+    setDateId(null);
+  }, [term]);
+  const group = groups[Math.min(pick, groups.length - 1)];
+  const many = group !== undefined && group.eventCount > 1 && group.performerId !== null;
+  const performer = useQuery({
+    queryKey: ['performer', group?.performerId],
+    queryFn: () => getPerformer(group!.performerId!),
+    enabled: many,
+  });
+  const wanted = group ? (dateId ?? group.nearEventId) : null;
+
+  // The event on the map. It follows the search, except while seats are held:
+  // then it stays, so a hold is never dropped by typing.
+  const [eventId, setEventId] = useState<string | null>(null);
+  const event = useQuery({
+    queryKey: ['event', eventId],
+    queryFn: () => getEvent(eventId!),
+    enabled: eventId !== null,
+    placeholderData: keepPreviousData, // slide from one venue to the next, not through an empty map
+  });
+  const e = eventId ? event.data : undefined;
+  const live = e !== undefined && e.id === eventId;
+  const booking = useBooking(eventId ?? '', live, { guest: true });
+  const holding = booking.mine.length > 0;
+  const [ticket, setTicket] = useState<{ event: EventDetail; booking: Booking } | null>(null);
+  useEffect(() => {
+    if (!holding) setEventId(wanted);
+  }, [wanted, holding]);
+
+  // Each keystroke is acknowledged by the seats, not by a spinner.
+  const stage = useRef<HTMLDivElement>(null);
+  const nudge = () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    stage.current?.animate([{ opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+  };
+
+  async function onPay() {
+    const done = await booking.pay();
+    if (done && e) setTicket({ event: e, booking: done });
+  }
+
+  const select = (i: number) => {
+    setPick(i);
+    setDateId(null);
+  };
+
+  return (
+    <section
+      className={`relative bg-[linear-gradient(180deg,var(--color-bg),var(--color-velvet)_70%)] ${searching || holding ? 'hero-active' : ''}`}
+    >
+      {/* Blurs the hero's bottom edge into the page instead of ending on a hard line. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-16 -bottom-20 h-40 bg-[linear-gradient(180deg,var(--color-velvet),var(--color-bg))] blur-2xl"
+      />
+      <div className={`${container} relative flex flex-col items-center gap-8 py-14 sm:gap-10 sm:py-20`}>
+        <h1 className="rise flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
+          <LogoMark className="h-[0.95em] w-auto" />
+          <span className="display">PickTick</span>
+          <span className="sr-only">: live seats for concerts, games and shows</span>
+        </h1>
+
+        {ticket ? (
+          <div className="flex w-full flex-col items-center gap-5">
+            <p className="display text-2xl sm:text-3xl">You're in, {ticket.booking.nickname}.</p>
+            <TicketCard event={ticket.event} booking={ticket.booking} />
+            <p className="max-w-md text-center text-sm text-muted">
+              A reservation only. No payment was taken and no real ticket is issued.
+            </p>
+            <div className="flex flex-wrap justify-center gap-5">
+              <button
+                className="link"
+                onClick={() => {
+                  setTicket(null);
+                  setQ('');
+                }}
+              >
+                Book something else
+              </button>
+              <Link to="/tickets" className="link">
+                My tickets
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <form
+              role="search"
+              className="rise flex w-full max-w-xl flex-col gap-2 [--i:1] sm:flex-row"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                navigate(q.trim() ? `/events?q=${encodeURIComponent(q.trim())}` : '/events');
+              }}
+            >
+              <label className="flex-1">
+                <span className="sr-only">Search events</span>
+                <input
+                  type="search"
+                  value={q}
+                  maxLength={100}
+                  onChange={(ev) => {
+                    setQ(ev.target.value);
+                    nudge();
+                  }}
+                  onKeyDown={(ev) => {
+                    // Up and down step through the other matches without leaving the field.
+                    const step = ev.key === 'ArrowDown' ? 1 : ev.key === 'ArrowUp' ? -1 : 0;
+                    if (!step || holding || groups.length < 2) return;
+                    ev.preventDefault();
+                    select((pick + step + groups.length) % groups.length);
+                  }}
+                  placeholder="Artist, team, venue or city"
+                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base text-ink placeholder:text-muted"
+                />
+              </label>
+              <button className="btn-primary h-13">Find events</button>
+            </form>
+
+            {/* What the seats below are, and the ways to change that. */}
+            <div className="flex w-full max-w-2xl flex-col items-center gap-3 text-center empty:hidden" aria-live="polite">
+              {e && (
+                <p key={e.id} className="notice-in">
+                  <Link to={`/event/${e.id}`} className="text-lg font-bold hover:underline">
+                    {e.name}
+                  </Link>
+                  <br />
+                  <span className="text-sm text-muted">
+                    {eventDay(e.startsAt)} at {eventTime(e.startsAt)} · {e.venueName}
+                    {e.city && `, ${e.city}`}
+                  </span>
+                </p>
+              )}
+              {searching && search.isError && (
+                <p>
+                  Events could not be loaded.{' '}
+                  <button onClick={() => search.refetch()} className="link">
+                    Try again
+                  </button>
+                </p>
+              )}
+              {searching && search.data && !search.isPlaceholderData && groups.length === 0 && (
+                <p className="notice-in font-semibold">Nothing on sale matches that. Try a performer, team or city.</p>
+              )}
+              {groups.length > 1 && (
+                <ul className="flex flex-wrap justify-center gap-2" aria-label="Matches">
+                  {groups.map((g, i) => (
+                    <li key={g.key}>
+                      <button className={chip} aria-pressed={g === group} disabled={holding} onClick={() => select(i)}>
+                        {g.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {many && performer.data && (
+                <ul className="flex flex-wrap justify-center gap-2" aria-label="Dates">
+                  {performer.data.events.slice(0, MAX_DATES).map((d) => (
+                    <li key={d.id}>
+                      <button
+                        className={chip}
+                        aria-pressed={d.id === wanted}
+                        disabled={holding}
+                        onClick={() => setDateId(d.id)}
+                      >
+                        {shortDay(d.startsAt)}
+                        {d.city && ` · ${d.city}`}
+                      </button>
+                    </li>
+                  ))}
+                  {performer.data.events.length > MAX_DATES && (
+                    <li className="flex items-center">
+                      <Link to={`/artist/${performer.data.id}`} className="link px-2 text-sm">
+                        All {performer.data.events.length} dates
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              )}
+              {holding && groups.length + (many ? 1 : 0) > 1 && (
+                <p className="text-sm text-muted">Release your seats to switch event.</p>
+              )}
+              <Notice notice={booking.notice} />
+            </div>
+
+            <div ref={stage} className={`hero-stage rise w-full [--i:2] ${e ? 'max-w-2xl' : 'max-w-md'}`}>
+              <SeatMap
+                bare
+                maxSeatPx={40}
+                seatMap={e?.seatMap ?? null}
+                mapKey={e?.id}
+                eventType={e?.type}
+                seats={live ? (booking.room.state?.seats ?? {}) : {}}
+                mine={booking.mine}
+                busy={booking.busy}
+                onSeat={booking.onSeat}
+              />
+              {e?.source === 'ticketmaster' && (
+                <p className="mx-auto mt-3 max-w-[65ch] text-center text-sm text-muted">
+                  This seat map is PickTick's own layout for this kind of event, not the venue's real floor plan.
+                </p>
+              )}
+            </div>
+
+            {holding && (
+              <div className="w-full max-w-md text-left">
+                <CheckoutPanel
+                  seats={booking.heldSeats}
+                  msLeft={booking.left}
+                  paying={booking.paying}
+                  onRelease={booking.release}
+                  onPay={onPay}
+                >
+                  <label className="mt-3 block">
+                    <span className="sr-only mb-1 text-sm font-semibold lg:not-sr-only lg:block">Name on the ticket</span>
+                    <input
+                      className="field"
+                      placeholder="Name on the ticket"
+                      value={booking.nickname}
+                      maxLength={NICKNAME_MAX}
+                      autoComplete="nickname"
+                      onChange={(ev) => booking.setNickname(ev.target.value)}
+                    />
+                  </label>
+                </CheckoutPanel>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}

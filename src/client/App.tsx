@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link, NavLink, Outlet, Route, Routes, useLocation, useMatch } from 'react-router';
+import { Link, NavLink, Outlet, Route, Routes, useLocation } from 'react-router';
 import { LogoMark } from './components/Logo';
 import Artist from './pages/Artist';
 import Booking from './pages/Booking';
@@ -23,8 +23,6 @@ const TITLES: [RegExp, string][] = [
 
 export default function App() {
   const { pathname } = useLocation();
-  // The seat page has a fixed checkout bar on small screens; leave the footer room under it.
-  const onEventPage = useMatch('/event/:id') !== null;
   // A new page starts at the top, with its own tab title.
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -87,7 +85,7 @@ export default function App() {
         </Routes>
       </div>
 
-      <footer className={`border-t border-line ${onEventPage ? 'pb-36 lg:pb-0' : ''}`}>
+      <footer className="border-t border-line">
         <div className={`${container} flex flex-col gap-3 py-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between`}>
           <p className="max-w-[60ch]">
             Some listings use event data from Ticketmaster. PickTick is not affiliated with Ticketmaster and
