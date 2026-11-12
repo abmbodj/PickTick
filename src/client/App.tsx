@@ -11,8 +11,7 @@ import Tickets from './pages/Tickets';
 
 export const container = 'mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12';
 
-const navLink = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-11 items-center rounded-sm text-sm font-semibold decoration-brand decoration-2 underline-offset-8 hover:underline ${isActive ? 'underline' : ''}`;
+const navLink = 'nav-link';
 
 const TITLES: [RegExp, string][] = [
   [/^\/$/, 'PickTick: live seats for concerts, games and shows'],
@@ -56,7 +55,8 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex-1">
+      {/* Keyed by path so each page fades in. Opacity only: a transform here would unpin the checkout bar. */}
+      <div key={pathname} className="page-in flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route

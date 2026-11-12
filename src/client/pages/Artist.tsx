@@ -50,13 +50,13 @@ export default function Artist() {
       </Link>
 
       <header
-        className={`relative mt-3 flex items-end overflow-hidden rounded-xl bg-[linear-gradient(160deg,var(--color-velvet),var(--color-bg))] [--fade-to:var(--color-bg)] ${
+        className={`rise relative mt-3 flex items-end overflow-hidden rounded-xl bg-[linear-gradient(160deg,var(--color-velvet),var(--color-bg))] [--fade-to:var(--color-bg)] ${
           p.imageUrl ? 'aspect-[4/3] sm:aspect-[21/9]' : 'pt-16 sm:pt-24'
         }`}
       >
         {p.imageUrl && (
           <>
-            <img src={p.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_25%]" />
+            <img src={p.imageUrl} alt="" className="settle absolute inset-0 h-full w-full object-cover object-[center_25%]" />
             <div className="image-blur" />
             <div className="image-fade" />
           </>
@@ -71,12 +71,12 @@ export default function Artist() {
 
       {p.blurb && <p className="mt-5 max-w-[65ch] text-muted">{p.blurb}</p>}
 
-      <ul className="mt-6 border-t border-line">
+      <ul className="stagger mt-6 border-t border-line">
         {p.events.map((e) => (
           <li key={e.id} className="border-b border-line">
             <Link
               to={`/event/${e.id}`}
-              className="-mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
+              className="group -mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
             >
               <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-md bg-surface ring-1 ring-line ring-inset" aria-hidden="true">
                 <span className="text-xs font-semibold uppercase">{monthAbbrev(e.startsAt)}</span>
@@ -95,7 +95,7 @@ export default function Artist() {
                   {e.name !== p.name && ` · ${e.name}`}
                 </p>
               </div>
-              <span className="btn-secondary hidden shrink-0 sm:inline-flex">Pick seats</span>
+              <span className="btn-secondary hidden shrink-0 group-hover:border-ink group-hover:bg-ink group-hover:text-bg sm:inline-flex">Pick seats</span>
             </Link>
           </li>
         ))}

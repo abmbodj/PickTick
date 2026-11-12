@@ -16,7 +16,7 @@ export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay 
   return (
     <section
       aria-label="Checkout"
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:static lg:rounded-lg lg:border lg:p-4"
+      className="checkout-in fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:static lg:rounded-lg lg:border lg:p-4"
     >
       {seats.length === 0 ? (
         <p className="py-1 text-sm">
@@ -31,7 +31,7 @@ export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay 
             {seats.map((s) => (
               <li
                 key={s.id}
-                className="flex items-center gap-1 rounded-md border border-line pl-3 text-sm lg:justify-between"
+                className="pop-in flex items-center gap-1 rounded-md border border-line pl-3 text-sm lg:justify-between"
               >
                 <span>
                   <span className="font-semibold">{seatLabel(s.id)}</span>{' '}

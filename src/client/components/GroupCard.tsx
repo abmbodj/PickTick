@@ -67,7 +67,7 @@ export default function GroupCard({ group: g }: { group: EventGroup }) {
   );
 }
 
-export const groupGrid = 'grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-x-7 gap-y-10';
+export const groupGrid = 'stagger grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-x-7 gap-y-10';
 
 export function GroupGridSkeleton({ count }: { count: number }) {
   return (

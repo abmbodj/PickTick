@@ -20,6 +20,7 @@
   --color-sold: #4b262f;
   --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
@@ -40,6 +41,36 @@ html {
   .field {
     @apply h-11 w-full rounded-md border border-line bg-surface px-3 text-base text-ink transition-colors duration-150 placeholder:text-muted hover:border-muted;
   }
+  .btn-primary,
+  .btn-secondary,
+  .chip {
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms,
+      scale 150ms var(--ease-out-quart);
+    &:active:not(:disabled) {
+      scale: 0.96;
+    }
+  }
+  /* Header links: the underline draws in from the left, and stays for the current page. */
+  .nav-link {
+    @apply relative inline-flex min-h-11 items-center rounded-sm text-sm font-semibold;
+    &::after {
+      content: '';
+      position: absolute;
+      inset: auto 0 0.5rem 0;
+      height: 2px;
+      background: var(--color-brand);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 260ms var(--ease-out-expo);
+    }
+    &:hover::after,
+    &[aria-current='page']::after {
+      transform: scaleX(1);
+    }
+  }
   .link {
     @apply font-semibold text-accent underline underline-offset-2 transition-colors duration-150 hover:text-ink;
   }
@@ -56,16 +87,96 @@ h3 {
   outline-offset: 2px;
 }
 
-/* Seats */
+/* Seats. The map fills in row by row from the stage. After that, motion only
+   marks a change of state: yours pops with a ring, a seat someone else holds
+   flips over like a board, a sold seat is stamped. */
+@keyframes seat-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+@keyframes seat-claim {
+  from {
+    transform: scale(0.7);
+  }
+}
+@keyframes seat-flip {
+  from {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes seat-stamp {
+  from {
+    opacity: 0.2;
+    transform: scale(1.4);
+  }
+}
+@keyframes seat-ring {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+@keyframes draw {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 1;
+  }
+}
 .seat {
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  transition: opacity 150ms;
+  animation: seat-in 450ms var(--ease-out-expo) calc(var(--row, 0) * 28ms) backwards;
+}
+.seat,
+.seat-box,
+.seat-ring,
+.hero-cell {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 .seat rect {
   transition:
     fill 180ms var(--ease-out-quart),
-    stroke 180ms var(--ease-out-quart);
+    stroke 180ms var(--ease-out-quart),
+    transform 160ms var(--ease-out-quart);
+}
+@media (hover: hover) {
+  .seat:is([data-status='available'], [data-status='mine']):hover .seat-box {
+    transform: scale(1.16);
+  }
+  .seat[data-status='available']:hover .seat-box {
+    fill: var(--color-velvet);
+  }
+}
+.seat:is([data-status='available'], [data-status='mine']):active .seat-box {
+  transform: scale(0.88);
+}
+.seat[data-status='mine'] .seat-box {
+  animation: seat-claim 420ms var(--ease-out-expo);
+}
+.seat[data-status='held'] .seat-box {
+  animation: seat-flip 380ms var(--ease-out-quart);
+}
+.seat[data-status='sold'] .seat-box {
+  animation: seat-stamp 380ms var(--ease-out-quart);
+}
+.seat-ring {
+  fill: none;
+  stroke: var(--color-brand);
+  stroke-width: 0.06;
+  pointer-events: none;
+  animation: seat-ring 600ms var(--ease-out-expo) both;
+}
+.seat-mark {
+  stroke-dasharray: 1;
+  animation: draw 320ms var(--ease-out-quart) 120ms backwards;
 }
 .seat:focus-visible rect {
   stroke: var(--color-accent);
@@ -98,9 +209,21 @@ h3 {
     fill: transparent;
   }
 }
+/* The block fills in from the front row out, then empty seats light up under
+   the pointer and fade behind it. */
+.hero-cell {
+  animation: seat-in 500ms var(--ease-out-expo) var(--in, 0ms) backwards;
+  transition: fill 1200ms ease-out;
+}
+.hero-cell:hover {
+  fill: color-mix(in oklab, var(--color-ink) 55%, transparent);
+  transition-duration: 0s;
+}
 .hero-seat {
   fill: transparent;
-  animation: seat-taken 9s var(--ease-out-quart) infinite;
+  animation:
+    seat-in 500ms var(--ease-out-expo) var(--in, 0ms) backwards,
+    seat-taken 9s var(--ease-out-quart) var(--d, 0s) infinite;
 }
 
 /* A performer with several dates is drawn as a small stack of cards that fans
@@ -129,7 +252,20 @@ h3 {
   transform: rotate(7deg) translate(11px, 5px);
 }
 .stack-top {
-  transition: transform 320ms var(--ease-out-quart);
+  transition:
+    transform 320ms var(--ease-out-quart),
+    border-color 200ms;
+}
+.stack img {
+  transition: scale 600ms var(--ease-out-quart);
+}
+.stack:hover img,
+.stack:focus-visible img {
+  scale: 1.05;
+}
+.stack:hover .stack-top,
+.stack:focus-visible .stack-top {
+  border-color: var(--color-muted);
 }
 .stack:hover .stack-top,
 .stack:focus-visible .stack-top {
@@ -170,7 +306,120 @@ h3 {
   }
 }
 
+/* Entrances. `rise` is the one move: up 14px and in. `--i` staggers siblings;
+   `.stagger` does it for the first children of a list. Nothing keeps a
+   transform afterwards, so fixed children (the checkout bar) stay put. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.page-in {
+  animation: fade 260ms ease-out backwards;
+}
+.rise,
+.stagger > * {
+  animation: rise 600ms var(--ease-out-expo) calc(var(--i, 0) * 70ms) backwards;
+}
+.stagger > :nth-child(2) { --i: 1; }
+.stagger > :nth-child(3) { --i: 2; }
+.stagger > :nth-child(4) { --i: 3; }
+.stagger > :nth-child(5) { --i: 4; }
+.stagger > :nth-child(6) { --i: 5; }
+.stagger > :nth-child(7) { --i: 6; }
+.stagger > :nth-child(n + 8) { --i: 7; }
+
+/* Landing sections rise as they scroll into view. Browsers without scroll
+   timelines just show them. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 22%;
+  }
+}
+
+/* A picture settles back into its frame. */
+@keyframes settle {
+  from {
+    scale: 1.08;
+  }
+}
+.settle {
+  animation: settle 1400ms var(--ease-out-expo) backwards;
+}
+
+/* Checkout: a bar that slides up from the bottom on a phone, a panel that rises on a desktop. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+.checkout-in {
+  animation: sheet-up 500ms var(--ease-out-expo) 250ms backwards;
+}
+@media (min-width: 64rem) {
+  .checkout-in {
+    animation-name: rise;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+.pop-in {
+  animation: pop 300ms var(--ease-out-expo) backwards;
+}
+
+/* Messages by the seat map: info rises in, an error shakes its head once. */
+.notice-in {
+  animation: rise 250ms var(--ease-out-expo) backwards;
+}
+@keyframes shake {
+  0% { opacity: 0; }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.notice-error {
+  animation: shake 400ms ease-out backwards;
+}
+
+/* The ticket comes out of the printer. */
+@keyframes ticket-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-10px);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.ticket-print {
+  animation: ticket-print 800ms var(--ease-out-expo) 150ms backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    animation: none;
+  }
   .seat rect {
     transition: none;
   }

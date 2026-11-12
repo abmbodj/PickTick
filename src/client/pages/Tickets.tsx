@@ -9,7 +9,7 @@ export default function Tickets() {
 
   return (
     <main className="py-8">
-      <h1 className="display text-3xl sm:text-4xl">My tickets</h1>
+      <h1 className="rise display text-3xl sm:text-4xl">My tickets</h1>
       <p className="mt-2 max-w-[65ch] text-muted">
         Reservations made in this browser. They are tied to a cookie, so clearing cookies or switching
         devices leaves them behind.
@@ -37,7 +37,7 @@ export default function Tickets() {
         )}
 
         {tickets.data?.length === 0 && (
-          <div className="rounded-lg border border-dashed border-muted p-8">
+          <div className="rise rounded-lg border border-dashed border-muted p-8">
             <p className="text-lg font-bold">No tickets yet.</p>
             <p className="mt-1 text-muted">Pick an event, hold a seat and reserve it. It will show up here.</p>
             <Link
@@ -50,7 +50,7 @@ export default function Tickets() {
         )}
 
         {tickets.data && tickets.data.length > 0 && (
-          <ul className="space-y-4">
+          <ul className="stagger space-y-4">
             {tickets.data.map((t) => (
               <li key={t.bookingId} className="flex overflow-hidden rounded-lg border border-line bg-surface">
                 <EventThumb imageUrl={t.imageUrl} startsAt={t.startsAt} className="hidden w-40 self-stretch rounded-none sm:block" />

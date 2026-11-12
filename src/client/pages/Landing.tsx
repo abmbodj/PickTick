@@ -28,10 +28,16 @@ function HeroSeats() {
             rx={0.16}
             stroke="var(--color-ink)"
             strokeWidth={0.07}
-            className={taken ? 'hero-seat' : undefined}
+            className={taken ? 'hero-seat hero-cell' : 'hero-cell'}
             data-taken={taken || undefined}
             fill="transparent"
-            style={taken ? { animationDelay: `-${(n * 0.19).toFixed(2)}s` } : undefined}
+            style={
+              {
+                // Front row first, centre before the aisles.
+                '--in': `${250 + y * 45 + Math.round(Math.abs(x - (cols - 1) / 2) * 18)}ms`,
+                '--d': `-${(n * 0.19).toFixed(2)}s`,
+              } as React.CSSProperties
+            }
           />
         );
       })}
@@ -77,17 +83,17 @@ export default function Landing() {
           className="pointer-events-none absolute -inset-x-16 -bottom-20 h-40 bg-[linear-gradient(180deg,var(--color-velvet),var(--color-bg))] blur-2xl"
         />
         <div className={`${container} relative flex flex-col items-center gap-10 py-14 sm:gap-12 sm:py-20`}>
-          <h1 className="flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
+          <h1 className="rise flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
             <LogoMark className="h-[0.95em] w-auto" />
             <span className="display">PickTick</span>
             <span className="sr-only">: live seats for concerts, games and shows</span>
           </h1>
-          <div className="w-full max-w-md">
+          <div className="rise w-full max-w-md [--i:1]">
             <HeroSeats />
           </div>
           <form
             role="search"
-            className="flex w-full max-w-xl flex-col gap-2 sm:flex-row"
+            className="rise flex w-full max-w-xl flex-col gap-2 [--i:4] sm:flex-row"
             onSubmit={(e) => {
               e.preventDefault();
               navigate(q.trim() ? `/events?q=${encodeURIComponent(q.trim())}` : '/events');
@@ -110,7 +116,7 @@ export default function Landing() {
       </section>
 
       <section className={`${container} relative py-12 sm:py-16`}>
-        <div className="flex items-end justify-between gap-4">
+        <div className="rise flex items-end justify-between gap-4 [--i:5]">
           <h2 className="display text-3xl sm:text-4xl">Trending</h2>
           <Link to="/events" className="link shrink-0">
             See all events
@@ -142,7 +148,7 @@ export default function Landing() {
         const groups = (byType[i].data?.groups ?? []).filter((g) => !shown.has(g.key)).slice(0, 4);
         if (groups.length === 0) return null;
         return (
-          <section key={type} className={`${container} relative pb-12 sm:pb-16`}>
+          <section key={type} className={`${container} reveal relative pb-12 sm:pb-16`}>
             <div className="flex items-end justify-between gap-4">
               <h2 className="display text-2xl sm:text-3xl">{heading}</h2>
               <Link to={`/events?type=${type}`} className="link shrink-0">
@@ -161,7 +167,7 @@ export default function Landing() {
       })}
 
       <section className="border-y border-line bg-surface">
-        <div className={`${container} py-12 sm:py-16`}>
+        <div className={`${container} reveal py-12 sm:py-16`}>
           <h2 className="display text-3xl sm:text-4xl">How a seat becomes yours</h2>
           <ol className="mt-8 grid gap-8 sm:grid-cols-3">
             {STEPS.map(([title, body], i) => (

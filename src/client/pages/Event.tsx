@@ -173,7 +173,7 @@ export default function Event() {
       <Link to="/events" className="text-sm link">
         All events
       </Link>
-      <div className="mt-3 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
+      <div className="rise mt-3 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
         {e.imageUrl && (
           <img
             src={e.imageUrl}
@@ -226,7 +226,8 @@ export default function Event() {
           <div className="mt-3 min-h-11" aria-live="assertive">
             {notice && (
               <p
-                className={`rounded-md border px-3 py-2 text-sm font-semibold ${
+                key={notice.text}
+                className={`${notice.kind === 'error' ? 'notice-error' : 'notice-in'} rounded-md border px-3 py-2 text-sm font-semibold ${
                   notice.kind === 'error' ? 'border-danger text-danger' : 'border-muted'
                 }`}
               >

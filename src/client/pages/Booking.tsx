@@ -36,13 +36,13 @@ export default function Booking() {
   const b = booking.data;
   return (
     <main className="py-8">
-      <h1 className="display text-3xl sm:text-4xl">You're in, {b.nickname}.</h1>
-      <p className="mt-2 text-muted">
+      <h1 className="rise display text-3xl sm:text-4xl">You're in, {b.nickname}.</h1>
+      <p className="rise mt-2 text-muted [--i:1]">
         {b.seatIds.length === 1 ? 'This seat is' : 'These seats are'} yours, and nobody else can book
         {b.seatIds.length === 1 ? ' it' : ' them'}.
       </p>
 
-      <article className="mt-6 max-w-md rounded-lg border border-line bg-surface">
+      <article className="ticket-print mt-6 max-w-md rounded-lg border border-line bg-surface">
         <div className="border-b border-dashed border-muted p-4">
           <h2 className="text-lg font-bold">{e.name}</h2>
           <p className="mt-1 text-sm text-muted">
@@ -52,7 +52,7 @@ export default function Booking() {
             {e.city && `, ${e.city}`}
           </p>
         </div>
-        <ul className="divide-y divide-line px-4">
+        <ul className="stagger divide-y divide-line px-4 [--i:6]">
           {b.seatIds.map((seatId) => (
             <li key={seatId} className="py-3 font-semibold">
               {seatLabel(seatId)}

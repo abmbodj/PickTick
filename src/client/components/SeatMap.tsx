@@ -71,6 +71,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                   <g
                     key={s.id}
                     className="seat"
+                    style={{ '--row': Math.min(s.y, 16) } as React.CSSProperties}
                     data-status={status}
                     role="button"
                     tabIndex={0}
@@ -89,7 +90,18 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                     <title>{`${seatLabel(s.id)}: ${describe(seat, isMine)}`}</title>
                     {/* Larger invisible hit area so neighbouring taps do not fall in the gaps. */}
                     <rect x={s.x} y={s.y} width={1} height={1} fill="transparent" />
+                    {status === 'mine' && (
+                      <rect
+                        className="seat-ring"
+                        x={s.x + (1 - CELL) / 2}
+                        y={s.y + (1 - CELL) / 2}
+                        width={CELL}
+                        height={CELL}
+                        rx={0.16}
+                      />
+                    )}
                     <rect
+                      className="seat-box"
                       x={s.x + (1 - CELL) / 2}
                       y={s.y + (1 - CELL) / 2}
                       width={CELL}
@@ -109,6 +121,8 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                     />
                     {status === 'mine' && (
                       <path
+                        className="seat-mark"
+                        pathLength={1}
                         d={`M${s.x + 0.3} ${s.y + 0.52} l0.14 0.14 l0.27 -0.3`}
                         fill="none"
                         stroke="var(--color-on-brand)"
@@ -119,6 +133,8 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                     )}
                     {status === 'sold' && (
                       <path
+                        className="seat-mark"
+                        pathLength={1}
                         d={`M${s.x + 0.34} ${s.y + 0.34} l0.32 0.32 m0 -0.32 l-0.32 0.32`}
                         stroke="var(--color-ink)"
                         strokeWidth={0.09}

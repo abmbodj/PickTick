@@ -45,9 +45,9 @@ export default function Events() {
 
   return (
     <main className="overflow-x-clip py-8">
-      <h1 className="display text-3xl sm:text-4xl">Find an event</h1>
+      <h1 className="rise display text-3xl sm:text-4xl">Find an event</h1>
 
-      <form role="search" className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]" onSubmit={(e) => e.preventDefault()}>
+      <form role="search" className="rise mt-5 grid [--i:1] grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]" onSubmit={(e) => e.preventDefault()}>
         <label className="col-span-2 block sm:col-span-1">
           <span className="mb-1 block text-sm font-semibold">Search</span>
           <input
@@ -69,13 +69,13 @@ export default function Events() {
         </label>
       </form>
 
-      <fieldset className="mt-4">
+      <fieldset className="rise mt-4 [--i:2]">
         <legend className="sr-only">Event type</legend>
         <div className="flex flex-wrap gap-2">
           {(['', ...EVENT_TYPES] as const).map((t) => (
             <label
               key={t}
-              className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-line px-4 text-sm font-semibold capitalize transition-colors duration-150 hover:border-muted hover:bg-surface has-checked:border-ink has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
+              className="chip inline-flex min-h-11 cursor-pointer items-center rounded-full border border-line px-4 text-sm font-semibold capitalize hover:border-muted hover:bg-surface has-checked:border-ink has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
             >
               <input
                 type="radio"
