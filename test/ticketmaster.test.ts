@@ -51,18 +51,18 @@ test('with no API key, search returns only own events and never calls out', asyn
   expect(calls).toEqual([]);
 });
 
-test('with a key, search lists own events then API events, and maps fields', async () => {
+test('with a key, search lists real events that have a picture, and maps fields', async () => {
   const calls = stubApi(() =>
     page([
       tmEvent(),
       tmEvent({ id: 'undated', dates: { start: { dateTBA: true } } }),
+      tmEvent({ id: 'bare', images: [] }),
       tmEvent({ id: 'late', name: 'Later Show', dates: { start: { localDate: '2027-12-31' } } }),
     ]),
   );
   const hits = (await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-31' })).events;
-  expect(hits).toHaveLength(11); // 9 own + 2 dated
-  expect(hits.slice(0, 9).every((e) => e.source === 'picktick')).toBe(true);
-  expect(hits[9]).toEqual<EventSummary>({
+  expect(hits.map((e) => e.id)).toEqual(['tm-Z7r9jZ1Ad0', 'tm-late']); // no own events, undated or pictureless ones
+  expect(hits[0]).toEqual<EventSummary>({
     id: 'tm-Z7r9jZ1Ad0',
     name: 'Nova Lights: World Tour',
     type: 'concert',
@@ -105,19 +105,16 @@ test('a repeated search is served from cache', async () => {
   expect(calls).toHaveLength(1);
 });
 
-test('a failing, rate-limited or malformed API gives own events only', async () => {
+test('a failing, rate-limited or malformed API gives no events', async () => {
   stubApi(() => new Response('{"fault":{}}', { status: 429 }));
   expect((await searchEvents(withKey, { q: 'herons rate limited' })).events).toEqual([]);
-  expect(((await searchEvents(withKey, { type: 'sports', from: '2027-01-02' })).events).map((e) => e.id)).toEqual([
-    'herons-rooks',
-    'derby-finals',
-  ]);
+  expect((await searchEvents(withKey, { type: 'sports', from: '2027-01-02' })).events).toEqual([]);
   vi.restoreAllMocks();
   stubApi(() => new Response('<html>oops', { status: 200 }));
-  expect((await searchEvents(withKey, { type: 'comedy', from: '2027-01-03' })).events).toHaveLength(2);
+  expect((await searchEvents(withKey, { type: 'comedy', from: '2027-01-03' })).events).toEqual([]);
   vi.restoreAllMocks();
   vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
-  expect((await searchEvents(withKey, { type: 'theater', from: '2027-01-04' })).events).toHaveLength(2);
+  expect((await searchEvents(withKey, { type: 'theater', from: '2027-01-04' })).events).toEqual([]);
 });
 
 test('tm- event detail maps fields and gets a concert house priced from the range', async () => {
@@ -276,14 +273,12 @@ test('with no dates asked, events that started before today are dropped', async 
 const paged = (events: unknown[], totalPages: number) =>
   Response.json({ _embedded: { events }, page: { size: 20, totalElements: totalPages * 20, totalPages, number: 0 } });
 
-test('page 0 leads with own events, then the API page; later pages are API only', async () => {
+test('every page is the API page, with no own events', async () => {
   const calls = stubApi((url) => paged([tmEvent({ id: `p${url.searchParams.get('page')}` })], 7));
   const first = await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-30' });
   expect(first.page).toBe(0);
   expect(first.totalPages).toBe(7);
-  expect(first.events).toHaveLength(10);
-  expect(first.events.slice(0, 9).every((e) => e.source === 'picktick')).toBe(true);
-  expect(first.events[9].id).toBe('tm-p0');
+  expect(first.events.map((e) => e.id)).toEqual(['tm-p0']);
   const third = await searchEvents(withKey, { from: '2027-01-01', to: '2027-12-30', page: 2 });
   expect(third.page).toBe(2);
   expect(third.events.map((e) => e.id)).toEqual(['tm-p2']);

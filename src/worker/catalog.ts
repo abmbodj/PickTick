@@ -60,17 +60,18 @@ function ftsQuery(q: string): string | null {
   return words.map((w, i) => `"${w}"${i === words.length - 1 ? '*' : ''}`).join(' ');
 }
 
-// One page of results. PickTick's own events lead the first page; the rest of
-// that page, and every later page, is Ticketmaster's listing. Each group is
-// soonest first. ponytail: own events are few, so they are not paged; give them
-// LIMIT/OFFSET if the catalog grows past a screenful.
+// One page of results, soonest first. With a Ticketmaster key the listing is
+// real events only; PickTick's own invented catalog stands in when there is no
+// key (local development, tests). Own events stay reachable by their links.
+// ponytail: own events are few, so they are not paged; give them LIMIT/OFFSET
+// if the catalog grows past a screenful.
 export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<SearchPage> {
   const page = p.page ?? 0;
-  const [own, tm] = await Promise.all([
-    page === 0 ? searchOwn(env.DB, p) : [],
-    tmSearch(env.TICKETMASTER_API_KEY, p),
-  ]);
-  return { events: [...own, ...tm.events], page, totalPages: tm.totalPages };
+  if (!env.TICKETMASTER_API_KEY)
+    return { events: page === 0 ? await searchOwn(env.DB, p) : [], page, totalPages: 1 };
+  const tm = await tmSearch(env.TICKETMASTER_API_KEY, p);
+  // Every card on the live site carries a picture, so an event without one is left out.
+  return { events: tm.events.filter((e) => e.imageUrl), page, totalPages: tm.totalPages };
 }
 
 async function searchOwn(d1: D1Database, p: SearchParams): Promise<EventSummary[]> {
