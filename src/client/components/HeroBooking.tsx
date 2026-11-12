@@ -104,6 +104,20 @@ export default function HeroBooking() {
     stage.current?.animate([{ opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
   };
 
+  // The view follows the booking: down to the checkout when the first seat is held, then to the
+  // ticket once it is reserved. A glide, or a jump for anyone who asked for less motion.
+  const checkoutAt = useRef<HTMLDivElement>(null);
+  const ticketAt = useRef<HTMLDivElement>(null);
+  const glide = (el: HTMLElement | null, block: ScrollLogicalPosition) =>
+    el?.scrollIntoView({ block, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  useEffect(() => {
+    // Below lg the checkout is a bar pinned to the screen, already in view.
+    if (holding && matchMedia('(min-width: 1024px)').matches) glide(checkoutAt.current, 'nearest');
+  }, [holding]);
+  useEffect(() => {
+    if (ticket) glide(ticketAt.current, 'center');
+  }, [ticket]);
+
   async function onPay() {
     const done = await booking.pay();
     if (done && e) setTicket({ event: e, booking: done });
@@ -131,7 +145,7 @@ export default function HeroBooking() {
         </h1>
 
         {ticket ? (
-          <div className="flex w-full flex-col items-center gap-5">
+          <div ref={ticketAt} className="flex w-full flex-col items-center gap-5">
             <p className="display text-2xl sm:text-3xl">You're in, {ticket.booking.nickname}.</p>
             <TicketCard event={ticket.event} booking={ticket.booking} />
             <CancelTicket
@@ -317,7 +331,8 @@ export default function HeroBooking() {
             </div>
 
             {holding && (
-              <div className="w-full max-w-md text-left">
+              // pb on phones: room to scroll the map's last rows above the pinned checkout bar.
+              <div ref={checkoutAt} className="w-full max-w-md scroll-mb-6 pb-48 text-left lg:pb-0">
                 <CheckoutPanel
                   seats={booking.heldSeats}
                   msLeft={booking.left}

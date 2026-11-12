@@ -430,13 +430,15 @@ h3 {
 }
 
 /* The ticket comes out of the printer. */
+/* The clip leaves room around the ticket for its drop shadow, so the shadow prints in with it
+   instead of appearing when the clip is lifted. */
 @keyframes ticket-print {
   from {
-    clip-path: inset(0 0 100% 0);
+    clip-path: inset(-3rem -3rem 100% -3rem);
     transform: translateY(-10px);
   }
   to {
-    clip-path: inset(0);
+    clip-path: inset(-3rem);
   }
 }
 .ticket-print {

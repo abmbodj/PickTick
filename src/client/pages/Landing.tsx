@@ -35,7 +35,9 @@ export default function Landing() {
   const shown = new Set(top.map((g) => g.key));
 
   return (
-    <main className="overflow-x-clip">
+    // No scroll anchoring: when the hero swaps the seat map for a ticket, the browser would jump to
+    // keep the rows below in place, before the hero's own glide to the ticket.
+    <main className="overflow-x-clip [overflow-anchor:none]">
       <HeroBooking />
 
       {/* Steps back while the hero is being used to book. */}
