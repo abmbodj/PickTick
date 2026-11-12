@@ -136,6 +136,13 @@ export async function clearTickets(d1: D1Database): Promise<string[]> {
 
 // ---- one card per performer ----
 
+// Ticketmaster serves an act's own pictures from /dam/a/ and generic category
+// art from /dam/c/. Prefer the act's own, then any picture at all.
+const pickImage = (events: EventSummary[]) =>
+  events.find((e) => e.imageUrl?.includes('/dam/a/'))?.imageUrl ??
+  events.find((e) => e.imageUrl)?.imageUrl ??
+  null;
+
 // Collapses a result list so a tour with thirty dates is one entry, not
 // thirty. Groups keep the order their first event appeared in.
 export function groupEvents(events: EventSummary[]): EventGroup[] {
@@ -154,7 +161,7 @@ export function groupEvents(events: EventSummary[]): EventGroup[] {
       name: sorted.length === 1 ? first.name : first.performerName,
       type: first.type,
       source: first.source,
-      imageUrl: sorted.find((e) => e.imageUrl)?.imageUrl ?? null,
+      imageUrl: pickImage(sorted),
       eventCount: sorted.length,
       nextStartsAt: first.startsAt,
       firstEventId: first.id,
@@ -181,7 +188,7 @@ export async function getPerformer(env: CatalogEnv, id: string): Promise<Perform
       blurb: '',
       type: tm.events[0].type,
       source: 'ticketmaster',
-      imageUrl: tm.events.find((e) => e.imageUrl)?.imageUrl ?? null,
+      imageUrl: pickImage(tm.events),
       events: tm.events,
     };
   }

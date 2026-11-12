@@ -433,3 +433,11 @@ test('two listings of the same performer under different ids are one group and o
   const p = (await getPerformer(withKey, 'tm-DUPCHECK'))!;
   expect(p.events.map((e) => e.id)).toEqual(['tm-dup1', 'tm-dup2']);
 });
+
+test("a group prefers the act's own picture over Ticketmaster's generic category art", () => {
+  const [g] = groupEvents([
+    summary({ id: 'p1', imageUrl: 'https://s1.ticketm.net/dam/c/df8/generic_16_9.jpg' }),
+    summary({ id: 'p2', startsAt: '2027-01-11T20:00:00Z', imageUrl: 'https://s1.ticketm.net/dam/a/24d/artist_16_9.jpg' }),
+  ]);
+  expect(g.imageUrl).toBe('https://s1.ticketm.net/dam/a/24d/artist_16_9.jpg');
+});
