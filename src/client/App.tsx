@@ -7,7 +7,7 @@ import Landing from './pages/Landing';
 import Privacy from './pages/Privacy';
 import Tickets from './pages/Tickets';
 
-export const container = 'mx-auto w-full max-w-6xl px-4 sm:px-6';
+export const container = 'mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
   `inline-flex min-h-11 items-center rounded-sm text-sm font-semibold decoration-brand decoration-2 underline-offset-8 hover:underline ${isActive ? 'underline' : ''}`;

@@ -57,9 +57,14 @@ export default function Landing() {
     .slice(0, 6);
 
   return (
-    <main>
-      <section className="bg-[linear-gradient(180deg,var(--color-bg),var(--color-velvet)_70%)]">
-        <div className={`${container} grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]`}>
+    <main className="overflow-x-clip">
+      <section className="relative bg-[linear-gradient(180deg,var(--color-bg),var(--color-velvet)_70%)]">
+        {/* Blurs the hero's bottom edge into the page instead of ending on a hard line. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-16 -bottom-20 h-40 bg-[linear-gradient(180deg,var(--color-velvet),var(--color-bg))] blur-2xl"
+        />
+        <div className={`${container} relative grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]`}>
           <div>
             <h1 className="display text-[clamp(2.5rem,7vw,5rem)]">Good seats go fast. Be faster.</h1>
             <p className="mt-5 max-w-[46ch] text-lg">
@@ -96,7 +101,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className={`${container} py-12 sm:py-16`}>
+      <section className={`${container} relative py-12 sm:py-16`}>
         <div className="flex items-end justify-between gap-4">
           <h2 className="display text-3xl sm:text-4xl">Coming up</h2>
           <Link to="/events" className="shrink-0 link">
