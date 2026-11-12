@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet, Route, Routes } from 'react-router';
+import { useEffect } from 'react';
+import { Link, NavLink, Outlet, Route, Routes, useLocation, useMatch } from 'react-router';
 import Booking from './pages/Booking';
 import Event from './pages/Event';
 import Events from './pages/Events';
@@ -9,15 +10,32 @@ import Tickets from './pages/Tickets';
 export const container = 'mx-auto w-full max-w-6xl px-4 sm:px-6';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
-  `rounded-sm py-2 text-sm font-semibold underline-offset-4 hover:underline ${isActive ? 'underline' : ''}`;
+  `inline-flex min-h-11 items-center rounded-sm text-sm font-semibold decoration-brand decoration-2 underline-offset-8 hover:underline ${isActive ? 'underline' : ''}`;
+
+const TITLES: [RegExp, string][] = [
+  [/^\/$/, 'PickTick: live seats for concerts, games and shows'],
+  [/^\/events/, 'Events · PickTick'],
+  [/^\/tickets/, 'My tickets · PickTick'],
+  [/^\/privacy/, 'Privacy · PickTick'],
+  [/\/booking\//, 'Your ticket · PickTick'],
+];
 
 export default function App() {
+  const { pathname } = useLocation();
+  // The seat page has a fixed checkout bar on small screens; leave the footer room under it.
+  const onEventPage = useMatch('/event/:id') !== null;
+  // A new page starts at the top, with its own tab title.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.title = TITLES.find(([re]) => re.test(pathname))?.[1] ?? 'PickTick';
+  }, [pathname]);
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="border-b border-ink bg-bg">
-        <div className={`${container} flex items-center justify-between py-3`}>
-          <Link to="/" className="rounded-sm text-xl font-black tracking-tight [font-stretch:125%]">
-            Pick<span className="bg-brand px-1">Tick</span>
+      <header className="border-b border-line bg-bg">
+        <div className={`${container} flex items-center justify-between py-2`}>
+          <Link to="/" className="inline-flex min-h-11 items-center rounded-sm text-xl font-black tracking-tight [font-stretch:125%]">
+            Pick<span className="bg-brand px-1 text-on-brand">Tick</span>
           </Link>
           <nav aria-label="Main" className="flex gap-5">
             <NavLink to="/events" className={navLink}>
@@ -50,7 +68,7 @@ export default function App() {
               element={
                 <main className="py-16">
                   <h1 className="text-2xl font-bold">That page does not exist.</h1>
-                  <Link to="/events" className="mt-4 inline-block font-semibold text-accent underline">
+                  <Link to="/events" className="mt-4 inline-block link">
                     Browse all events
                   </Link>
                 </main>
@@ -60,20 +78,20 @@ export default function App() {
         </Routes>
       </div>
 
-      <footer className="mt-12 border-t border-line pb-28 lg:pb-0">
+      <footer className={`border-t border-line ${onEventPage ? 'pb-36 lg:pb-0' : ''}`}>
         <div className={`${container} flex flex-col gap-3 py-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between`}>
           <p className="max-w-[60ch]">
             Some listings use event data from Ticketmaster. PickTick is not affiliated with Ticketmaster and
             does not issue real tickets.
           </p>
           <nav aria-label="Footer" className="flex gap-5 font-semibold text-ink">
-            <Link to="/events" className="hover:underline">
+            <Link to="/events" className="inline-flex min-h-11 items-center hover:underline">
               Events
             </Link>
-            <Link to="/tickets" className="hover:underline">
+            <Link to="/tickets" className="inline-flex min-h-11 items-center hover:underline">
               My tickets
             </Link>
-            <Link to="/privacy" className="hover:underline">
+            <Link to="/privacy" className="inline-flex min-h-11 items-center hover:underline">
               Privacy
             </Link>
           </nav>

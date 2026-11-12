@@ -29,7 +29,7 @@ export default function Tickets() {
             <p className="font-semibold">Your tickets could not be loaded.</p>
             <button
               onClick={() => tickets.refetch()}
-              className="mt-3 h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface"
+              className="mt-3 btn-secondary"
             >
               Try again
             </button>
@@ -37,12 +37,12 @@ export default function Tickets() {
         )}
 
         {tickets.data?.length === 0 && (
-          <div className="rounded-lg border border-dashed border-ink p-8">
+          <div className="rounded-lg border border-dashed border-muted p-8">
             <p className="text-lg font-bold">No tickets yet.</p>
             <p className="mt-1 text-muted">Pick an event, hold a seat and reserve it. It will show up here.</p>
             <Link
               to="/events"
-              className="mt-5 inline-flex h-12 items-center rounded-md bg-brand px-5 font-bold transition-colors duration-150 hover:bg-brand-strong"
+              className="btn-primary mt-5"
             >
               Find an event
             </Link>
@@ -52,10 +52,10 @@ export default function Tickets() {
         {tickets.data && tickets.data.length > 0 && (
           <ul className="space-y-4">
             {tickets.data.map((t) => (
-              <li key={t.bookingId} className="flex overflow-hidden rounded-lg border border-ink">
+              <li key={t.bookingId} className="flex overflow-hidden rounded-lg border border-line bg-surface">
                 <EventThumb imageUrl={t.imageUrl} startsAt={t.startsAt} className="hidden w-40 self-stretch rounded-none sm:block" />
                 <div className="min-w-0 flex-1 p-4">
-                  <h2 className="text-lg font-bold">
+                  <h2 className="text-lg font-bold [overflow-wrap:anywhere]">
                     <Link to={`/event/${t.eventId}`} className="hover:underline">
                       {t.eventName}
                     </Link>
@@ -66,17 +66,17 @@ export default function Tickets() {
                   </p>
                   <ul className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">
                     {t.seatIds.map((s) => (
-                      <li key={s} className="rounded-md border border-line px-2 py-1">
+                      <li key={s} className="rounded-md border border-line bg-bg px-2 py-1">
                         {seatLabel(s)}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="flex flex-col items-end justify-between border-l border-dashed border-ink p-4">
+                <div className="flex flex-col items-end justify-between border-l border-dashed border-muted p-4">
                   <span className="font-mono text-lg font-bold tabular-nums">{money(t.totalCents)}</span>
                   <Link
                     to={`/event/${t.eventId}/booking/${t.bookingId}`}
-                    className="text-sm font-semibold text-accent underline"
+                    className="text-sm link"
                   >
                     View ticket
                   </Link>

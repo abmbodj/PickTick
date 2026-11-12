@@ -43,6 +43,11 @@ export default function Event() {
   const now = useNow(mine.length > 0);
   const left = room.state ? msLeft(room.state, now) : null;
 
+  const eventName = event.data?.name;
+  useEffect(() => {
+    if (eventName) document.title = `${eventName} · PickTick`;
+  }, [eventName]);
+
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), 5000);
@@ -83,11 +88,11 @@ export default function Event() {
         </h1>
         <div className="mt-4 flex gap-5">
           {!(event.error instanceof ApiError && event.error.status === 404) && (
-            <button onClick={() => event.refetch()} className="font-semibold text-accent underline">
+            <button onClick={() => event.refetch()} className="link">
               Try again
             </button>
           )}
-          <Link to="/events" className="font-semibold text-accent underline">
+          <Link to="/events" className="link">
             Browse all events
           </Link>
         </div>
@@ -165,7 +170,7 @@ export default function Event() {
 
   return (
     <main className="py-6 pb-10">
-      <Link to="/events" className="text-sm font-semibold text-accent underline">
+      <Link to="/events" className="text-sm link">
         All events
       </Link>
       <div className="mt-3 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -184,7 +189,7 @@ export default function Event() {
           </p>
           {e.externalUrl && (
             <p className="mt-2 text-sm">
-              <a href={e.externalUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline">
+              <a href={e.externalUrl} target="_blank" rel="noopener noreferrer" className="link">
                 Buy real tickets for this event on Ticketmaster
               </a>
             </p>
@@ -199,7 +204,7 @@ export default function Event() {
             <span className="mb-1 block text-sm font-semibold">Your name, shown on seats you hold</span>
             <input
               ref={nameInput}
-              className="h-11 w-full rounded-md border border-line bg-bg px-3 text-base placeholder:text-muted"
+              className="field"
               placeholder="For example, Sam"
               value={nickname}
               maxLength={NICKNAME_MAX}
@@ -215,7 +220,7 @@ export default function Event() {
             {notice && (
               <p
                 className={`rounded-md border px-3 py-2 text-sm font-semibold ${
-                  notice.kind === 'error' ? 'border-danger text-danger' : 'border-ink'
+                  notice.kind === 'error' ? 'border-danger text-danger' : 'border-muted'
                 }`}
               >
                 {notice.text}
@@ -233,6 +238,24 @@ export default function Event() {
               onSeat={onSeat}
             />
           </div>
+          {e.source === 'ticketmaster' && (
+            <p className="mt-2 max-w-[65ch] text-sm text-muted">
+              This seat map is PickTick's own layout for this kind of event, not the venue's real floor plan.
+            </p>
+          )}
+          {e.seatmapUrl && (
+            <details className="mt-3">
+              <summary className="link inline-flex min-h-11 cursor-pointer items-center">
+                See the venue's real seating chart
+              </summary>
+              <img
+                src={e.seatmapUrl}
+                alt={`Seating chart for ${e.venueName}`}
+                loading="lazy"
+                className="mt-2 w-full max-w-xl rounded-lg bg-white p-2"
+              />
+            </details>
+          )}
         </div>
 
         <aside className="flex flex-col gap-6">

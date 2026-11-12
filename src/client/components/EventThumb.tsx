@@ -3,11 +3,11 @@ import { dayOfMonth, monthAbbrev } from '../lib/format';
 
 // Poster colours for events that come without a picture.
 const POSTER: Record<EventType | 'none', string> = {
-  concert: 'bg-brand text-ink',
-  sports: 'bg-accent text-bg',
-  theater: 'bg-ink text-brand',
-  comedy: 'bg-surface text-ink ring-1 ring-inset ring-ink',
-  none: 'bg-ink text-bg',
+  concert: 'bg-brand text-on-brand',
+  sports: 'bg-accent text-on-brand',
+  theater: 'bg-surface text-brand ring-1 ring-inset ring-line',
+  comedy: 'bg-ink text-bg',
+  none: 'bg-surface text-ink ring-1 ring-inset ring-line',
 };
 
 // The event's image with the date stamped on it, or a date poster when there
@@ -36,9 +36,9 @@ export default function EventThumb({
       </div>
     );
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-md bg-ink ${className}`} aria-hidden="true">
+    <div className={`relative shrink-0 overflow-hidden rounded-md bg-surface ${className}`} aria-hidden="true">
       <img src={imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
-      <span className="absolute top-0 left-0 flex flex-col items-center rounded-br-md bg-ink px-2 py-1 text-bg">
+      <span className="absolute top-0 left-0 flex flex-col items-center rounded-br-md bg-bg px-2 py-1 text-ink">
         <span className="text-[0.7rem] font-semibold uppercase">{monthAbbrev(startsAt)}</span>
         <span className="text-xl leading-none font-extrabold tabular-nums">{dayOfMonth(startsAt)}</span>
       </span>

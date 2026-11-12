@@ -25,7 +25,7 @@ function HeroSeats() {
             width={0.76}
             height={0.76}
             rx={0.16}
-            stroke="var(--color-ink)"
+            stroke="var(--color-on-brand)"
             strokeWidth={0.07}
             className={taken ? 'hero-seat' : undefined}
             data-taken={taken || undefined}
@@ -58,7 +58,7 @@ export default function Landing() {
 
   return (
     <main>
-      <section className="bg-brand">
+      <section className="bg-brand text-on-brand">
         <div className={`${container} grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]`}>
           <div>
             <h1 className="display text-[clamp(2.5rem,7vw,5rem)]">Good seats go fast. Be faster.</h1>
@@ -82,10 +82,10 @@ export default function Landing() {
                   maxLength={100}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Artist, team, venue or city"
-                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base placeholder:text-muted"
+                  className="h-13 w-full rounded-md border-2 border-on-brand bg-bg px-4 text-base text-ink placeholder:text-muted"
                 />
               </label>
-              <button className="h-13 rounded-md bg-ink px-6 text-base font-bold text-bg transition-opacity duration-150 hover:opacity-85">
+              <button className="h-13 rounded-md bg-on-brand px-6 text-base font-bold text-ink transition-opacity duration-150 hover:opacity-85 active:opacity-75">
                 Find events
               </button>
             </form>
@@ -99,7 +99,7 @@ export default function Landing() {
       <section className={`${container} py-12 sm:py-16`}>
         <div className="flex items-end justify-between gap-4">
           <h2 className="display text-3xl sm:text-4xl">Coming up</h2>
-          <Link to="/events" className="shrink-0 font-semibold text-accent underline">
+          <Link to="/events" className="shrink-0 link">
             See all events
           </Link>
         </div>
@@ -117,7 +117,7 @@ export default function Landing() {
         {upcoming.isError && (
           <p className="mt-6">
             Events could not be loaded.{' '}
-            <button onClick={() => upcoming.refetch()} className="font-semibold text-accent underline">
+            <button onClick={() => upcoming.refetch()} className="link">
               Try again
             </button>
           </p>
@@ -128,7 +128,7 @@ export default function Landing() {
               <li key={e.id}>
                 <Link to={`/event/${e.id}`} className="group block rounded-md">
                   <EventThumb imageUrl={e.imageUrl} startsAt={e.startsAt} type={e.type} className="aspect-video w-full" />
-                  <h3 className="mt-3 text-lg leading-snug font-bold group-hover:underline">{e.name}</h3>
+                  <h3 className="mt-3 text-lg leading-snug font-bold [overflow-wrap:anywhere] group-hover:underline">{e.name}</h3>
                   <p className="mt-1 text-sm text-muted">
                     {eventDay(e.startsAt)} at {eventTime(e.startsAt)}
                     <br />
@@ -142,7 +142,7 @@ export default function Landing() {
         )}
       </section>
 
-      <section className="bg-ink text-bg">
+      <section className="border-y border-line bg-surface">
         <div className={`${container} py-12 sm:py-16`}>
           <h2 className="display text-3xl sm:text-4xl">How a seat becomes yours</h2>
           <ol className="mt-8 grid gap-8 sm:grid-cols-3">
@@ -152,13 +152,13 @@ export default function Landing() {
                   {i + 1}
                 </span>
                 <h3 className="mt-2 text-xl font-bold">{title}</h3>
-                <p className="mt-2 max-w-[34ch] leading-relaxed text-bg/85">{body}</p>
+                <p className="mt-2 max-w-[34ch] leading-relaxed text-muted">{body}</p>
               </li>
             ))}
           </ol>
           <Link
             to="/events"
-            className="mt-10 inline-flex h-13 items-center rounded-md bg-brand px-6 font-bold text-ink transition-colors duration-150 hover:bg-brand-strong"
+            className="btn-primary mt-10"
           >
             Browse events
           </Link>

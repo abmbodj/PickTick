@@ -44,8 +44,8 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
           </pattern>
         </defs>
 
-        <rect x={cols * 0.15} y={-1.9} width={cols * 0.7} height={0.6} rx={0.12} fill="var(--color-ink)" />
-        <text x={cols / 2} y={-1.48} textAnchor="middle" fontSize={0.34} fontWeight={700} fill="var(--color-bg)">
+        <rect x={cols * 0.15} y={-1.9} width={cols * 0.7} height={0.6} rx={0.12} fill="var(--color-line)" />
+        <text x={cols / 2} y={-1.48} textAnchor="middle" fontSize={0.34} fontWeight={700} fill="var(--color-ink)">
           {front}
         </text>
 
@@ -96,12 +96,12 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                       height={CELL}
                       rx={0.16}
                       strokeWidth={status === 'mine' ? 0.1 : 0.06}
-                      stroke={status === 'held' ? 'var(--color-muted)' : 'var(--color-ink)'}
+                      stroke={status === 'held' ? 'var(--color-muted)' : status === 'sold' ? 'var(--color-sold)' : 'var(--color-ink)'}
                       fill={
                         status === 'mine'
                           ? 'var(--color-brand)'
                           : status === 'sold'
-                            ? 'var(--color-ink)'
+                            ? 'var(--color-sold)'
                             : status === 'held'
                               ? 'url(#hatch)'
                               : 'var(--color-bg)'
@@ -111,7 +111,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                       <path
                         d={`M${s.x + 0.3} ${s.y + 0.52} l0.14 0.14 l0.27 -0.3`}
                         fill="none"
-                        stroke="var(--color-ink)"
+                        stroke="var(--color-on-brand)"
                         strokeWidth={0.1}
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -120,7 +120,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
                     {status === 'sold' && (
                       <path
                         d={`M${s.x + 0.34} ${s.y + 0.34} l0.32 0.32 m0 -0.32 l-0.32 0.32`}
-                        stroke="var(--color-bg)"
+                        stroke="var(--color-ink)"
                         strokeWidth={0.09}
                         strokeLinecap="round"
                       />
@@ -138,7 +138,7 @@ export default function SeatMap({ seatMap, eventType, seats, mine, busy, onSeat 
           ['Available', 'border-2 border-ink bg-bg'],
           ['Yours', 'border-2 border-ink bg-brand'],
           ['Held by someone', 'border-2 border-muted bg-[repeating-linear-gradient(45deg,var(--color-muted)_0_2px,var(--color-bg)_2px_5px)]'],
-          ['Sold', 'border-2 border-ink bg-ink'],
+          ['Sold', 'border-2 border-sold bg-sold'],
         ].map(([label, swatch]) => (
           <li key={label} className="flex items-center gap-2">
             <span className={`inline-block h-4 w-4 rounded-sm ${swatch}`} aria-hidden="true" />

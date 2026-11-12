@@ -8,8 +8,7 @@ import { eventDay, eventTime } from '../lib/format';
 import { useDebounced } from '../lib/useDebounced';
 
 const EMPTY: SearchFilters = { q: '', type: '', from: '', to: '' };
-const field =
-  'h-11 w-full rounded-md border border-line bg-bg px-3 text-base text-ink placeholder:text-muted';
+const field = 'field';
 
 export default function Events() {
   const [params] = useSearchParams();
@@ -70,7 +69,7 @@ export default function Events() {
           {(['', ...EVENT_TYPES] as const).map((t) => (
             <label
               key={t}
-              className="cursor-pointer rounded-full border border-line px-4 py-2 text-sm font-semibold capitalize transition-colors duration-150 hover:bg-surface has-checked:border-ink has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
+              className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-line px-4 text-sm font-semibold capitalize transition-colors duration-150 hover:border-muted hover:bg-surface has-checked:border-ink has-checked:bg-ink has-checked:text-bg has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
             >
               <input
                 type="radio"
@@ -111,7 +110,7 @@ export default function Events() {
             <p className="mt-1 text-muted">{error.message}</p>
             <button
               onClick={() => refetch()}
-              className="mt-4 h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface"
+              className="mt-4 btn-secondary"
             >
               Try again
             </button>
@@ -125,7 +124,7 @@ export default function Events() {
             {filtered && (
               <button
                 onClick={() => change(EMPTY)}
-                className="mt-4 h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface"
+                className="mt-4 btn-secondary"
               >
                 Clear search and filters
               </button>
@@ -143,7 +142,7 @@ export default function Events() {
                 >
                   <EventThumb imageUrl={e.imageUrl} startsAt={e.startsAt} type={e.type} className="h-16 w-24" />
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-bold">{e.name}</h2>
+                    <h2 className="font-bold [overflow-wrap:anywhere]">{e.name}</h2>
                     <p className="text-sm text-muted">
                       <span className="sr-only">{eventDay(e.startsAt)}, </span>
                       {eventTime(e.startsAt)} · {e.venueName}
@@ -165,7 +164,7 @@ export default function Events() {
           <button
             onClick={() => goTo(page - 1)}
             disabled={page === 0}
-            className="h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+            className="btn-secondary"
           >
             Previous
           </button>
@@ -175,7 +174,7 @@ export default function Events() {
           <button
             onClick={() => goTo(page + 1)}
             disabled={page + 1 >= totalPages}
-            className="h-11 rounded-md border border-ink px-4 font-semibold hover:bg-surface disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+            className="btn-secondary"
           >
             Next
           </button>

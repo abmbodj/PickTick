@@ -1,26 +1,46 @@
 @import 'tailwindcss';
 
-/* Scene: phones in daylight and the odd washed-out projector, so a pure white
-   surface, near-black ink and seat states that differ by shape. Voice: a
-   marquee box office. One family (Archivo); headlines use its wide cut. */
+/* Scene: someone on a phone in the evening, deciding what to go to. Dark,
+   neutral surfaces; the honey brand colour and the event pictures carry the
+   warmth. Voice: a marquee box office. One family (Archivo); headlines use its
+   wide cut. Seat states differ by shape as well as colour. */
 @theme {
-  --color-bg: oklch(1 0 0);
-  --color-surface: oklch(0.965 0.004 80);
-  --color-line: oklch(0.87 0.008 80);
-  --color-ink: oklch(0.2 0.02 80);
-  --color-muted: oklch(0.44 0.02 80);
+  --color-bg: oklch(0.145 0 0);
+  --color-surface: oklch(0.205 0.004 80);
+  --color-line: oklch(0.33 0.006 80);
+  --color-ink: oklch(0.96 0.005 80);
+  --color-muted: oklch(0.74 0.012 80);
   --color-brand: oklch(0.8 0.15 80);
-  --color-brand-strong: oklch(0.72 0.155 76);
-  --color-accent: oklch(0.42 0.09 195);
-  --color-danger: oklch(0.48 0.19 27);
+  --color-brand-strong: oklch(0.86 0.14 84);
+  --color-on-brand: oklch(0.2 0.03 80);
+  --color-accent: oklch(0.82 0.1 195);
+  --color-danger: oklch(0.74 0.16 27);
+  --color-sold: oklch(0.42 0.008 80);
   --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 html {
+  color-scheme: dark;
   background: var(--color-bg);
   color: var(--color-ink);
   -webkit-text-size-adjust: 100%;
+}
+
+/* Shared controls. Every button, field and text link on the site is one of these. */
+@layer components {
+  .btn-primary {
+    @apply inline-flex h-12 items-center justify-center rounded-md bg-brand px-6 font-bold text-on-brand transition-colors duration-150 hover:bg-brand-strong active:bg-brand-strong disabled:cursor-wait disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply inline-flex h-11 items-center justify-center rounded-md border border-line px-4 font-semibold transition-colors duration-150 hover:border-muted hover:bg-surface active:bg-surface disabled:cursor-not-allowed disabled:text-muted disabled:hover:border-line disabled:hover:bg-transparent;
+  }
+  .field {
+    @apply h-11 w-full rounded-md border border-line bg-surface px-3 text-base text-ink transition-colors duration-150 placeholder:text-muted hover:border-muted;
+  }
+  .link {
+    @apply font-semibold text-accent underline underline-offset-2 transition-colors duration-150 hover:text-ink;
+  }
 }
 
 h1,
@@ -58,7 +78,8 @@ h3 {
   font-stretch: 125%;
   font-weight: 900;
   letter-spacing: -0.02em;
-  line-height: 0.98;
+  line-height: 1;
+  overflow-wrap: anywhere; /* long event names must not push the page sideways */
 }
 
 /* Landing hero: seats being taken, on a loop. Decorative. */
@@ -69,7 +90,7 @@ h3 {
   }
   45%,
   90% {
-    fill: var(--color-ink);
+    fill: var(--color-on-brand);
   }
   100% {
     fill: transparent;
@@ -111,6 +132,6 @@ h3 {
     animation: none;
   }
   .hero-seat[data-taken] {
-    fill: var(--color-ink);
+    fill: var(--color-on-brand);
   }
 }
