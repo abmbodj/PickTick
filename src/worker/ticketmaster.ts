@@ -206,9 +206,9 @@ export async function tmSearch(
 // Search-as-you-type: Ticketmaster's suggest endpoint matches partial words ("mulan" finds
 // Mulaney), which the keyword search above does not. Events only, mapped like search results;
 // any failure gives none, so search simply works as before.
-// ponytail: one call of up to SUGGEST_SIZE events, so a 28-date tour may show as fewer dates
-// in the result card; its artist page still lists them all.
-const SUGGEST_SIZE = '20';
+// ponytail: one call of up to SUGGEST_SIZE events (the API's most), so a 28-date tour may show as
+// fewer dates in the result card; its artist page still lists them all.
+const SUGGEST_SIZE = '5';
 export async function tmSuggest(apiKey: string | undefined, p: SearchParams): Promise<EventSummary[]> {
   if (!apiKey || !p.q) return [];
   const url = new URL(`${ROOT}/suggest`);

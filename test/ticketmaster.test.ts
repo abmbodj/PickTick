@@ -115,7 +115,7 @@ test('a partial word finds events through suggestions, after exact matches and w
   const hits = (await searchEvents(withKey, { q: 'mulan' })).events;
   expect(hits.map((e) => e.id)).toEqual(['tm-exact', 'tm-partial']);
   const suggest = new URL(calls.find((c) => c.includes('/suggest?'))!);
-  expect(Object.fromEntries(suggest.searchParams)).toMatchObject({ keyword: 'mulan', countryCode: 'US', resource: 'events' });
+  expect(Object.fromEntries(suggest.searchParams)).toMatchObject({ keyword: 'mulan', countryCode: 'US', resource: 'events', size: '5' }); // 5 is the API's most
   calls.length = 0;
   const both = (await searchEvents(withKey, { q: 'mulaney' })).events;
   expect(both.map((e) => e.id)).toEqual(['tm-exact', 'tm-partial']); // the exact match is not listed twice
