@@ -187,6 +187,13 @@ export default function Event() {
             {eventDay(e.startsAt)} at {eventTime(e.startsAt)} · {e.venueName}
             {e.city && `, ${e.city}`}
           </p>
+          {e.performerId && (
+            <p className="mt-2 text-sm">
+              <Link to={`/artist/${e.performerId}`} className="link">
+                All dates for {e.performerName}
+              </Link>
+            </p>
+          )}
           {e.externalUrl && (
             <p className="mt-2 text-sm">
               <a href={e.externalUrl} target="_blank" rel="noopener noreferrer" className="link">

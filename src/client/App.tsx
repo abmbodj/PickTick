@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, Route, Routes, useLocation, useMatch } from 'react-router';
 import { LogoMark } from './components/Logo';
+import Artist from './pages/Artist';
 import Booking from './pages/Booking';
 import Event from './pages/Event';
 import Events from './pages/Events';
@@ -67,6 +68,7 @@ export default function App() {
           >
             <Route path="/events" element={<Events />} />
             <Route path="/event/:id" element={<Event />} />
+            <Route path="/artist/:id" element={<Artist />} />
             <Route path="/event/:id/booking/:bookingId" element={<Booking />} />
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/privacy" element={<Privacy />} />

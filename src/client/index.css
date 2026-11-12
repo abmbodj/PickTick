@@ -103,6 +103,54 @@ h3 {
   animation: seat-taken 9s var(--ease-out-quart) infinite;
 }
 
+/* A performer with several dates is drawn as a small stack of cards that fans
+   out when you point at it. */
+.stack-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  transition: transform 320ms var(--ease-out-quart);
+}
+.stack-a {
+  background: var(--color-velvet);
+  transform: rotate(-3deg) translate(-3px, 3px);
+}
+.stack-b {
+  background: var(--color-line);
+  transform: rotate(3deg) translate(3px, 3px);
+}
+.stack:hover .stack-a,
+.stack:focus-visible .stack-a {
+  transform: rotate(-7deg) translate(-11px, 5px);
+}
+.stack:hover .stack-b,
+.stack:focus-visible .stack-b {
+  transform: rotate(7deg) translate(11px, 5px);
+}
+.stack-top {
+  transition: transform 320ms var(--ease-out-quart);
+}
+.stack:hover .stack-top,
+.stack:focus-visible .stack-top {
+  transform: translateY(-4px);
+}
+
+/* A picture that dissolves into the surface below it, so a title can sit on it. */
+.image-fade {
+  position: absolute;
+  inset: 40% 0 0 0;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--fade-to, var(--color-surface)) 12%, transparent);
+}
+.image-blur {
+  position: absolute;
+  inset: 55% 0 0 0;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  mask-image: linear-gradient(to top, black 35%, transparent);
+}
+
 /* A counter flashes once when its value changes. */
 @keyframes bump {
   from {
@@ -132,6 +180,10 @@ h3 {
   }
   .hero-seat {
     animation: none;
+  }
+  .stack-card,
+  .stack-top {
+    transition: none;
   }
   .hero-seat[data-taken] {
     fill: var(--color-ink);

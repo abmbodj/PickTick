@@ -1,10 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { EVENT_TYPES } from '../../../shared/types';
+import { useSearchParams } from 'react-router';
+import { EVENT_TYPES, type EventType } from '../../../shared/types';
 import { searchEvents, type SearchFilters } from '../lib/api';
-import EventThumb from '../components/EventThumb';
-import { eventDay, eventTime } from '../lib/format';
+import GroupCard, { GroupGridSkeleton, groupGrid } from '../components/GroupCard';
 import { useDebounced } from '../lib/useDebounced';
 
 const EMPTY: SearchFilters = { q: '', type: '', from: '', to: '' };
@@ -12,7 +11,14 @@ const field = 'field';
 
 export default function Events() {
   const [params] = useSearchParams();
-  const [filters, setFilters] = useState(() => ({ ...EMPTY, q: params.get('q') ?? '' }));
+  const [filters, setFilters] = useState<SearchFilters>(() => {
+    const type = params.get('type') ?? '';
+    return {
+      ...EMPTY,
+      q: params.get('q') ?? '',
+      type: (EVENT_TYPES as readonly string[]).includes(type) ? (type as EventType) : '',
+    };
+  });
   const [page, setPage] = useState(0);
   const deferred = useDebounced(filters, 300);
   const results = useRef<HTMLElement>(null);
@@ -34,11 +40,11 @@ export default function Events() {
     placeholderData: keepPreviousData,
   });
 
-  const data = result?.events;
+  const data = result?.groups;
   const totalPages = result?.totalPages ?? 1;
 
   return (
-    <main className="py-8">
+    <main className="overflow-x-clip py-8">
       <h1 className="display text-3xl sm:text-4xl">Find an event</h1>
 
       <form role="search" className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]" onSubmit={(e) => e.preventDefault()}>
@@ -91,17 +97,9 @@ export default function Events() {
         className="mt-6 scroll-mt-4 border-t border-line"
       >
         {isPending && (
-          <ul aria-label="Loading events">
-            {[0, 1, 2, 3].map((i) => (
-              <li key={i} className="flex animate-pulse gap-4 border-b border-line py-4">
-                <div className="h-14 w-14 rounded-md bg-surface" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 w-2/3 rounded bg-surface" />
-                  <div className="h-3 w-1/2 rounded bg-surface" />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="pt-8">
+            <GroupGridSkeleton count={8} />
+          </div>
         )}
 
         {isError && (
@@ -133,26 +131,10 @@ export default function Events() {
         )}
 
         {data && data.length > 0 && (
-          <ul>
-            {data.map((e) => (
-              <li key={e.id} className="border-b border-line">
-                <Link
-                  to={`/event/${e.id}`}
-                  className="-mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
-                >
-                  <EventThumb imageUrl={e.imageUrl} startsAt={e.startsAt} type={e.type} className="h-16 w-24" />
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-bold [overflow-wrap:anywhere]">{e.name}</h2>
-                    <p className="text-sm text-muted">
-                      <span className="sr-only">{eventDay(e.startsAt)}, </span>
-                      {eventTime(e.startsAt)} · {e.venueName}
-                      {e.city && `, ${e.city}`}
-                    </p>
-                  </div>
-                  <span className="hidden rounded-full border border-line px-3 py-1 text-xs font-semibold capitalize sm:block">
-                    {e.type}
-                  </span>
-                </Link>
+          <ul className={`${groupGrid} pt-8`}>
+            {data.map((g) => (
+              <li key={g.key}>
+                <GroupCard group={g} />
               </li>
             ))}
           </ul>

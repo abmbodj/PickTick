@@ -8,6 +8,10 @@ export const eventDay = (iso: string) => day.format(new Date(iso));
 export const eventTime = (iso: string) => time.format(new Date(iso));
 export const monthAbbrev = (iso: string) =>
   new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short' }).format(new Date(iso));
+const short = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+export const shortDay = (iso: string) => short.format(new Date(iso));
+const weekday = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
+export const weekdayOf = (iso: string) => weekday.format(new Date(iso));
 export const dayOfMonth = (iso: string) => new Date(iso).getUTCDate();
 
 // Seat ids look like "Front-1-3": section, row, seat number.

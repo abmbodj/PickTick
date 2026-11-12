@@ -1,4 +1,4 @@
-import type { Booking, EventDetail, EventType, SearchPage, Ticket } from '../../../shared/types';
+import type { Booking, EventDetail, EventType, GroupPage, Performer, Ticket } from '../../../shared/types';
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +26,7 @@ const post = (body: unknown): RequestInit => ({
 
 export type SearchFilters = { q: string; type: EventType | ''; from: string; to: string };
 
-export function searchEvents(f: SearchFilters, page = 0): Promise<SearchPage> {
+export function searchEvents(f: Partial<SearchFilters>, page = 0): Promise<GroupPage> {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(f)) if (v) params.set(k, v);
   if (page) params.set('page', String(page));
@@ -50,3 +50,5 @@ export const getBooking = (eventId: string, bookingId: string) =>
   api<Booking>(`/api/events/${encodeURIComponent(eventId)}/bookings/${encodeURIComponent(bookingId)}`);
 
 export const getTickets = () => api<Ticket[]>('/api/me/bookings');
+
+export const getPerformer = (id: string) => api<Performer>(`/api/performers/${encodeURIComponent(id)}`);

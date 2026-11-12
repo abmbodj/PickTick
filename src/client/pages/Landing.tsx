@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { container } from '../App';
-import EventThumb from '../components/EventThumb';
+import GroupCard, { GroupGridSkeleton, groupGrid } from '../components/GroupCard';
 import { LogoMark } from '../components/Logo';
 import { searchEvents } from '../lib/api';
-import { eventDay, eventTime } from '../lib/format';
+import type { EventType } from '../../../shared/types';
 
 // Decorative: a block of seats being taken, on a loop. Same order every render.
 function HeroSeats() {
@@ -39,6 +39,13 @@ function HeroSeats() {
   );
 }
 
+const ROWS: [EventType, string][] = [
+  ['concert', 'Concerts'],
+  ['sports', 'Sports'],
+  ['theater', 'Theatre'],
+  ['comedy', 'Comedy'],
+];
+
 const STEPS = [
   ['Tap a seat', 'The seat map is live. You see every seat the moment someone else takes it.'],
   ['It is yours for two minutes', 'Nobody can take a seat you are holding. Add up to four.'],
@@ -48,14 +55,18 @@ const STEPS = [
 export default function Landing() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const upcoming = useQuery({
-    queryKey: ['search', { q: '', type: '', from: '', to: '' }, 0],
-    queryFn: () => searchEvents({ q: '', type: '', from: '', to: '' }),
+  const trending = useQuery({ queryKey: ['search', {}, 0], queryFn: () => searchEvents({}) });
+  const byType = useQueries({
+    queries: ROWS.map(([type]) => ({
+      queryKey: ['search', { type }, 0],
+      queryFn: () => searchEvents({ type }),
+    })),
   });
-  // Lead with events that have a picture, then fill with the soonest.
-  const featured = [...(upcoming.data?.events ?? [])]
+  // Pictures first, eight across the top; the rows below never repeat them.
+  const top = [...(trending.data?.groups ?? [])]
     .sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)))
-    .slice(0, 6);
+    .slice(0, 8);
+  const shown = new Set(top.map((g) => g.key));
 
   return (
     <main className="overflow-x-clip">
@@ -100,49 +111,54 @@ export default function Landing() {
 
       <section className={`${container} relative py-12 sm:py-16`}>
         <div className="flex items-end justify-between gap-4">
-          <h2 className="display text-3xl sm:text-4xl">Coming up</h2>
-          <Link to="/events" className="shrink-0 link">
+          <h2 className="display text-3xl sm:text-4xl">Trending</h2>
+          <Link to="/events" className="link shrink-0">
             See all events
           </Link>
         </div>
-
-        {upcoming.isPending && (
-          <ul className="mt-6 grid animate-pulse grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6" aria-label="Loading events">
-            {[0, 1, 2].map((i) => (
-              <li key={i}>
-                <div className="aspect-video rounded-md bg-surface" />
-                <div className="mt-3 h-4 w-2/3 rounded bg-surface" />
-              </li>
-            ))}
-          </ul>
-        )}
-        {upcoming.isError && (
-          <p className="mt-6">
-            Events could not be loaded.{' '}
-            <button onClick={() => upcoming.refetch()} className="link">
-              Try again
-            </button>
-          </p>
-        )}
-        {upcoming.data && (
-          <ul className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-6 gap-y-8">
-            {featured.map((e) => (
-              <li key={e.id}>
-                <Link to={`/event/${e.id}`} className="group block rounded-md">
-                  <EventThumb imageUrl={e.imageUrl} startsAt={e.startsAt} type={e.type} className="aspect-video w-full" />
-                  <h3 className="mt-3 text-lg leading-snug font-bold [overflow-wrap:anywhere] group-hover:underline">{e.name}</h3>
-                  <p className="mt-1 text-sm text-muted">
-                    {eventDay(e.startsAt)} at {eventTime(e.startsAt)}
-                    <br />
-                    {e.venueName}
-                    {e.city && `, ${e.city}`}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="mt-8">
+          {trending.isPending && <GroupGridSkeleton count={4} />}
+          {trending.isError && (
+            <p>
+              Events could not be loaded.{' '}
+              <button onClick={() => trending.refetch()} className="link">
+                Try again
+              </button>
+            </p>
+          )}
+          {trending.data && (
+            <ul className={groupGrid}>
+              {top.map((g) => (
+                <li key={g.key}>
+                  <GroupCard group={g} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
+
+      {ROWS.map(([type, heading], i) => {
+        const groups = (byType[i].data?.groups ?? []).filter((g) => !shown.has(g.key)).slice(0, 4);
+        if (groups.length === 0) return null;
+        return (
+          <section key={type} className={`${container} relative pb-12 sm:pb-16`}>
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="display text-2xl sm:text-3xl">{heading}</h2>
+              <Link to={`/events?type=${type}`} className="link shrink-0">
+                See all {heading.toLowerCase()}
+              </Link>
+            </div>
+            <ul className={`${groupGrid} mt-8`}>
+              {groups.map((g) => (
+                <li key={g.key}>
+                  <GroupCard group={g} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
 
       <section className="border-y border-line bg-surface">
         <div className={`${container} py-12 sm:py-16`}>
