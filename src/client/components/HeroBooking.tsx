@@ -134,9 +134,6 @@ export default function HeroBooking() {
           <div className="flex w-full flex-col items-center gap-5">
             <p className="display text-2xl sm:text-3xl">You're in, {ticket.booking.nickname}.</p>
             <TicketCard event={ticket.event} booking={ticket.booking} />
-            <p className="max-w-md text-center text-sm text-muted">
-              A reservation only. No payment was taken and no real ticket is issued.
-            </p>
             <CancelTicket
               eventId={ticket.event.id}
               bookingId={ticket.booking.id}

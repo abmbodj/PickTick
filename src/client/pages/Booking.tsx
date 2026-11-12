@@ -65,10 +65,6 @@ export default function Booking() {
         <TicketCard event={e} booking={b} />
       </div>
 
-      <p className="mt-3 max-w-md text-sm text-muted">
-        A reservation only. No payment was taken and no real ticket is issued.
-      </p>
-
       <div className="mt-4">
         <CancelTicket eventId={id} bookingId={b.id} seats={b.seatIds.length} onDone={() => setCancelled(true)} />
       </div>
