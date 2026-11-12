@@ -7,6 +7,7 @@ import { getEvent, getPerformer, searchEvents } from '../lib/api';
 import { dayOfMonth, eventDay, eventTime, monthAbbrev, shortDay } from '../lib/format';
 import { useBooking } from '../lib/useBooking';
 import { useDebounced } from '../lib/useDebounced';
+import CancelTicket from './CancelTicket';
 import CheckoutPanel, { Notice } from './CheckoutPanel';
 import { LogoMark } from './Logo';
 import SeatMap from './SeatMap';
@@ -136,6 +137,12 @@ export default function HeroBooking() {
             <p className="max-w-md text-center text-sm text-muted">
               A reservation only. No payment was taken and no real ticket is issued.
             </p>
+            <CancelTicket
+              eventId={ticket.event.id}
+              bookingId={ticket.booking.id}
+              seats={ticket.booking.seatIds.length}
+              onDone={() => setTicket(null)} // back to the same map, with the seats free again
+            />
             <div className="flex flex-wrap justify-center gap-5">
               <button
                 className="link"

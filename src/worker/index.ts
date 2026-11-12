@@ -10,6 +10,7 @@ import {
   listEventIds,
   listTickets,
   recordTicket,
+  removeTicket,
   searchEvents,
 } from './catalog';
 import { identity } from './identity';
@@ -142,6 +143,15 @@ app.get('/api/events/:id/bookings/:bookingId', async (c) => {
   if (!booking) return c.json({ error: 'Booking not found' }, 404);
   await indexTicket(c.env, c.get('uid'), eventId, booking); // repairs a row a failed write left out
   return c.json(booking);
+});
+
+app.delete('/api/events/:id/bookings/:bookingId', async (c) => {
+  const eventId = c.req.param('id');
+  const bookingId = c.req.param('bookingId');
+  const cancelled = await room(c.env, eventId).cancel(eventId, c.get('uid'), bookingId);
+  if (!cancelled) return c.json({ error: 'Booking not found' }, 404);
+  await removeTicket(c.env.DB, c.get('uid'), bookingId);
+  return c.body(null, 204);
 });
 
 app.get('/api/me/bookings', async (c) => c.json(await listTickets(c.env.DB, c.get('uid'))));

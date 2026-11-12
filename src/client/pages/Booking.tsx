@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { getBooking, getEvent } from '../lib/api';
+import CancelTicket from '../components/CancelTicket';
 import TicketCard from '../components/TicketCard';
 
 export default function Booking() {
@@ -11,6 +13,23 @@ export default function Booking() {
     queryFn: () => getBooking(id, bookingId),
     retry: false,
   });
+  const [cancelled, setCancelled] = useState(false);
+
+  if (cancelled)
+    return (
+      <main className="py-8">
+        <h1 className="rise display text-3xl sm:text-4xl">Ticket cancelled.</h1>
+        <p className="rise mt-2 text-muted [--i:1]">Those seats are back on sale.</p>
+        <div className="rise mt-6 flex flex-wrap gap-5 [--i:2]">
+          <Link to={`/event/${id}`} className="link">
+            Back to the seat map
+          </Link>
+          <Link to="/tickets" className="link">
+            My tickets
+          </Link>
+        </div>
+      </main>
+    );
 
   if ((!event.data && event.isPending) || (!booking.data && booking.isPending))
     return (
@@ -49,6 +68,10 @@ export default function Booking() {
       <p className="mt-3 max-w-md text-sm text-muted">
         A reservation only. No payment was taken and no real ticket is issued.
       </p>
+
+      <div className="mt-4">
+        <CancelTicket eventId={id} bookingId={b.id} seats={b.seatIds.length} onDone={() => setCancelled(true)} />
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-5">
         <Link to="/tickets" className="link">

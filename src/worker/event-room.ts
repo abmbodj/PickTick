@@ -244,6 +244,22 @@ export class EventRoom extends DurableObject<Env> {
     return { ok: true, booking: this.bookingRow(bookingId)!.booking };
   }
 
+  // Gives a booking's seats back to the room. Only the person who made it can,
+  // and everyone watching the map sees the seats come free at once.
+  async cancel(eventId: string, userId: string, bookingId: string): Promise<boolean> {
+    if (!(await this.ensureSeats(eventId))) return false;
+    const row = this.bookingRow(bookingId);
+    if (row?.userId !== userId) return false;
+    const seatIds = row.booking.seatIds;
+    this.ctx.storage.transactionSync(() => {
+      this.sql.exec('UPDATE seat SET booking_id = NULL WHERE booking_id = ?', bookingId);
+      this.sql.exec('DELETE FROM booking WHERE id = ?', bookingId);
+      this.bump('sold', -seatIds.length);
+    });
+    this.broadcast([...this.purgeExpired(Date.now()), ...seatIds]);
+    return true;
+  }
+
   async getBooking(eventId: string, userId: string, bookingId: string): Promise<Booking | null> {
     if (!(await this.ensureSeats(eventId))) return null;
     const row = this.bookingRow(bookingId);

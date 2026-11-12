@@ -52,3 +52,8 @@ export const getBooking = (eventId: string, bookingId: string) =>
 export const getTickets = () => api<Ticket[]>('/api/me/bookings');
 
 export const getPerformer = (id: string) => api<Performer>(`/api/performers/${encodeURIComponent(id)}`);
+
+export const cancelBooking = (eventId: string, bookingId: string) =>
+  api<void>(`/api/events/${encodeURIComponent(eventId)}/bookings/${encodeURIComponent(bookingId)}`, {
+    method: 'DELETE',
+  });

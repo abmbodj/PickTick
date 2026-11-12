@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
+import CancelTicket from '../components/CancelTicket';
 import EventThumb from '../components/EventThumb';
 import { getTickets } from '../lib/api';
 import { eventDay, eventTime, money, seatLabel } from '../lib/format';
@@ -71,6 +72,9 @@ export default function Tickets() {
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-3">
+                    <CancelTicket eventId={t.eventId} bookingId={t.bookingId} seats={t.seatIds.length} />
+                  </div>
                 </div>
                 <div className="flex flex-col items-end justify-between border-l border-dashed border-muted p-4">
                   <span className="font-mono text-lg font-bold tabular-nums">{money(t.totalCents)}</span>

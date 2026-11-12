@@ -154,6 +154,12 @@ export async function recordTicket(env: CatalogEnv, userId: string, eventId: str
     .onConflictDoNothing();
 }
 
+export async function removeTicket(d1: D1Database, userId: string, bookingId: string) {
+  await drizzle(d1)
+    .delete(userBooking)
+    .where(and(eq(userBooking.userId, userId), eq(userBooking.bookingId, bookingId)));
+}
+
 export async function listTickets(d1: D1Database, userId: string): Promise<Ticket[]> {
   const rows = await drizzle(d1)
     .select()

@@ -161,3 +161,33 @@ test('a failed catalog read on first use does not poison the room', async () => 
   });
   expect(await r.hold('hot', user('ana'), SEAT)).toMatchObject({ ok: true });
 });
+
+test('cancelling a booking frees its seats, live, and only its owner can', async () => {
+  const r = room();
+  await r.hold('hot', user('ana'), 'Front-1-1');
+  await r.hold('hot', user('ana'), 'Back-1-1');
+  await r.confirm('hot', user('ana'), 'b1');
+  expect(await r.cancel('hot', 'u-ben', 'b1')).toBe(false);
+  expect((await seatOf(r, 'Front-1-1')).status).toBe('sold');
+
+  // A viewer's socket receives the freed seats as they happen.
+  const res = await r.fetch(new Request('https://x/', { headers: { upgrade: 'websocket', 'x-event-id': 'hot', 'x-uid': 'viewer' } }));
+  const ws = res.webSocket!;
+  ws.accept();
+  const updates: { type: string; seats?: { id: string; status: string }[] }[] = [];
+  ws.addEventListener('message', (e) => updates.push(JSON.parse(e.data as string)));
+
+  expect(await r.cancel('hot', 'u-ana', 'b1')).toBe(true);
+  await new Promise((done) => setTimeout(done, 50));
+  const freed = updates.find((m) => m.type === 'seats')!;
+  expect(freed.seats!.map((s) => [s.id, s.status]).sort()).toEqual([
+    ['Back-1-1', 'available'],
+    ['Front-1-1', 'available'],
+  ]);
+  const snap = (await r.snapshot('hot', 'viewer'))!;
+  expect(snap.stats.sold).toBe(0);
+  expect(await r.getBooking('hot', 'u-ana', 'b1')).toBeNull();
+  expect(await r.cancel('hot', 'u-ana', 'b1')).toBe(false);
+  expect(await r.hold('hot', user('ben'), 'Front-1-1')).toMatchObject({ ok: true });
+  ws.close();
+});

@@ -118,6 +118,21 @@ test('booking flow: hold, pay, read back; other users cannot read it', async () 
   expect((await get(`/api/events/hot/bookings/${bookingId}`, { headers: { cookie: b } })).status).toBe(404);
 });
 
+test('cancel: only the owner can, and it leaves My tickets', async () => {
+  const [a, b] = [await newUser(), await newUser()];
+  await hold(a, SEAT);
+  const bookingId = crypto.randomUUID();
+  await get('/api/events/hot/bookings', json(a, { bookingId, nickname: 'ana' }));
+  const cancel = (cookie: string) => get(`/api/events/hot/bookings/${bookingId}`, { method: 'DELETE', headers: { cookie } });
+  const mine = async () => ((await (await get('/api/me/bookings', { headers: { cookie: a } })).json()) as unknown[]).length;
+  expect(await mine()).toBe(1);
+  expect((await cancel(b)).status).toBe(404);
+  expect((await cancel(a)).status).toBe(204);
+  expect(await mine()).toBe(0);
+  expect((await cancel(a)).status).toBe(404);
+  expect((await hold(b, SEAT, 'ben')).status).toBe(200);
+});
+
 test('paying with no live holds is 410; a non-uuid bookingId is 400', async () => {
   const a = await newUser();
   expect((await get('/api/events/hot/bookings', json(a, { bookingId: crypto.randomUUID(), nickname: 'ana' }))).status).toBe(410);
