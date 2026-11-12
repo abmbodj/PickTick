@@ -11,10 +11,6 @@ export default function Tickets() {
   return (
     <main className="py-8">
       <h1 className="rise display text-3xl sm:text-4xl">My tickets</h1>
-      <p className="mt-2 max-w-[65ch] text-muted">
-        Reservations made in this browser. They are tied to a cookie, so clearing cookies or switching
-        devices leaves them behind.
-      </p>
 
       <section aria-live="polite" aria-busy={tickets.isPending} className="mt-6">
         {tickets.isPending && (
