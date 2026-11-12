@@ -256,7 +256,10 @@ h3 {
     transform 320ms var(--ease-out-quart),
     border-color 200ms;
 }
+/* Zoom from the bottom edge, so that edge stays still under the fade while
+   the card lifts; a moving edge lands on half pixels and flickers. */
 .stack img {
+  transform-origin: 50% 100%;
   transition: scale 600ms var(--ease-out-quart);
 }
 .stack:hover img,

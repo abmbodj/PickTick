@@ -47,7 +47,8 @@ export default function GroupCard({ group: g }: { group: EventGroup }) {
             </div>
           </>
         )}
-        <p className="px-4 pt-2 pb-4 text-sm text-muted">
+        {/* Overlaps the picture by 2px so no sliver of it can show through between them. */}
+        <p className="relative -mt-0.5 bg-surface px-4 pt-2.5 pb-4 text-sm text-muted">
           {many ? (
             <>
               Next {shortDay(g.nextStartsAt)}
