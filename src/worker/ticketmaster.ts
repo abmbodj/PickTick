@@ -6,8 +6,13 @@ import { MAX_PAGES, PAGE_SIZE, type EventDetail, type EventSummary, type EventTy
 // from this source.
 const ROOT = 'https://app.ticketmaster.com/discovery/v2';
 export const TM_PREFIX = 'tm-';
-const SEARCH_TTL = 300; // seconds; the API allows 5 requests/second and 5000/day
-const EVENT_TTL = 600;
+// The API allows 5 requests a second and 5000 a day: a class all using the site at once must stay
+// well inside that. Answers are cached fresh for these seconds, and kept a day longer as a
+// fallback for when the API says no (rate limited or down).
+const SEARCH_TTL = 900;
+const EVENT_TTL = 1800;
+const STALE_TTL = 86_400;
+const RETRY_AFTER_MS = 700; // one more try after a rate limit; the limit is per second
 
 export type SearchParams = {
   q?: string;
@@ -108,17 +113,38 @@ function generatedSeatMap(e: TmEvent): SeatMap {
 }
 
 async function cachedJson(url: URL, apiKey: string, ttl: number): Promise<Response> {
-  // The cache key leaves the API key out.
-  const cacheKey = new Request(`https://tm-cache.invalid${url.pathname}?${url.searchParams}`);
+  // The cache keys leave the API key out.
+  const query = `${url.pathname}?${url.searchParams}`;
+  const cacheKey = new Request(`https://tm-cache.invalid${query}`);
+  const staleKey = new Request(`https://tm-stale.invalid${query}`);
   const hit = await caches.default.match(cacheKey);
   if (hit) return hit;
   url.searchParams.set('apikey', apiKey);
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
-  if (res.ok) {
-    const copy = new Response(res.clone().body, res);
-    copy.headers.set('cache-control', `public, max-age=${ttl}`);
-    await caches.default.put(cacheKey, copy);
+  const get = () => fetch(url, { headers: { accept: 'application/json' } });
+  let res: Response | null = null;
+  try {
+    res = await get();
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, RETRY_AFTER_MS));
+      res = await get();
+    }
+  } catch {
+    res = null; // unreachable: try the stale copy below
   }
+  if (res?.ok) {
+    for (const [key, age] of [[cacheKey, ttl], [staleKey, STALE_TTL]] as const) {
+      const copy = new Response(res.clone().body, res);
+      copy.headers.set('cache-control', `public, max-age=${age}`);
+      await caches.default.put(key, copy);
+    }
+    return res;
+  }
+  // Rate limited or down: an older answer beats an empty page. A real 404 is passed on.
+  if (res?.status !== 404) {
+    const stale = await caches.default.match(staleKey);
+    if (stale) return stale;
+  }
+  if (!res) throw new Error('Ticketmaster API unreachable');
   return res;
 }
 
@@ -143,7 +169,9 @@ export async function tmSearch(
   url.searchParams.set('countryCode', 'US');
   if (p.near) {
     // Rounded so visitors in one city share a cached answer.
-    url.searchParams.set('latlong', p.near.map((n) => n.toFixed(1)).join(','));
+    // Rounded to half a degree (about 50 km) so a whole area shares one cached answer; small
+    // next to the 75-mile radius.
+    url.searchParams.set('latlong', p.near.map((n) => (Math.round(n * 2) / 2).toFixed(1)).join(','));
     url.searchParams.set('radius', NEARBY_MILES);
     url.searchParams.set('unit', 'miles');
   }

@@ -71,6 +71,8 @@ function ftsQuery(q: string): string | null {
 // key (local development, tests). Own events stay reachable by their links.
 // ponytail: own events are few, so they are not paged; give them LIMIT/OFFSET
 // if the catalog grows past a screenful.
+const SUGGEST_BELOW = 10; // exact matches; fewer than this and suggestions are added
+
 export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<SearchPage> {
   const page = p.page ?? 0;
   if (!env.TICKETMASTER_API_KEY) {
@@ -80,11 +82,11 @@ export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<Se
     if (near) own.sort((a, b) => (a.geo ? distance(near, a.geo) : Infinity) - (b.geo ? distance(near, b.geo) : Infinity));
     return { events: own, page, totalPages: 1 };
   }
-  // A typed search also asks for suggestions, which match partial words; they follow the exact matches.
-  const [tm, suggested] = await Promise.all([
-    tmSearch(env.TICKETMASTER_API_KEY, p),
-    p.q && page === 0 ? tmSuggest(env.TICKETMASTER_API_KEY, p) : [],
-  ]);
+  // A typed search that finds little also asks for suggestions, which match partial words; they
+  // follow the exact matches. Only when needed, to spend half the API calls on a full-word search.
+  const tm = await tmSearch(env.TICKETMASTER_API_KEY, p);
+  const suggested =
+    p.q && page === 0 && tm.events.length < SUGGEST_BELOW ? await tmSuggest(env.TICKETMASTER_API_KEY, p) : [];
   const seen = new Set(tm.events.map((e) => e.id));
   const events = [...tm.events, ...suggested.filter((e) => !seen.has(e.id))];
   // Every card on the live site carries a picture, so an event without one is left out.

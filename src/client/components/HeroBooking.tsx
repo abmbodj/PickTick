@@ -45,7 +45,7 @@ function TypeIcon({ type }: { type: EventType }) {
 export default function HeroBooking() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const term = useDebounced(q.trim(), 250);
+  const term = useDebounced(q.trim(), 350); // fewer lookups mid-word; each one is an API call
   const searching = term.length >= 2;
   const search = useQuery({
     queryKey: ['search', { q: term }, 0],

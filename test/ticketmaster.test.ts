@@ -124,6 +124,20 @@ test('a partial word finds events through suggestions, after exact matches and w
   expect(calls.some((c) => c.includes('/suggest.json'))).toBe(false); // browsing without a word asks no suggestions
 });
 
+test('when the API rate-limits, it is asked once more, then an older answer is served', async () => {
+  const calls = stubApi(() => page([tmEvent()]));
+  const fresh = (await searchEvents(withKey, { type: 'concert', from: '2027-01-10' })).events;
+  expect(fresh).toHaveLength(1);
+  // Let the fresh copy lapse, keeping the day-long fallback.
+  const asked = new URL(calls[0]);
+  asked.searchParams.delete('apikey');
+  await caches.default.delete(new Request(`https://tm-cache.invalid${asked.pathname}?${asked.searchParams}`));
+  vi.restoreAllMocks();
+  const limited = stubApi(() => new Response('{"fault":{}}', { status: 429 }));
+  expect((await searchEvents(withKey, { type: 'concert', from: '2027-01-10' })).events).toEqual(fresh);
+  expect(limited).toHaveLength(2); // the try and one retry
+});
+
 test('a failing, rate-limited or malformed API gives no events', async () => {
   stubApi(() => new Response('{"fault":{}}', { status: 429 }));
   expect((await searchEvents(withKey, { q: 'herons rate limited' })).events).toEqual([]);
