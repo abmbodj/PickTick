@@ -481,6 +481,18 @@ h3 {
   }
 }
 
+/* Several tickets fan out behind the front one, each a little further up, right and dimmer. */
+.ticket-fan {
+  transform: translate(calc(var(--depth) * 6px), calc(var(--depth) * -7px)) rotate(calc(var(--depth) * 1.2deg));
+  filter: brightness(calc(1 - var(--depth) * 0.18));
+  transition:
+    transform 450ms var(--ease-out-quart),
+    filter 450ms var(--ease-out-quart);
+}
+.stack-btn {
+  @apply inline-flex size-11 items-center justify-center rounded-full text-xl text-ink transition-colors duration-150 hover:bg-surface;
+}
+
 /* The tear line: a column of punched holes down the stub's edge. */
 .perforation {
   background-image: radial-gradient(circle, var(--color-bg) 1.5px, #0000 2px);
