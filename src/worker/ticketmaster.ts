@@ -131,7 +131,9 @@ export async function tmSearch(
   url.searchParams.set('countryCode', 'US');
   url.searchParams.set('size', String(PAGE_SIZE));
   url.searchParams.set('page', String(p.page ?? 0));
-  url.searchParams.set('sort', 'date,asc');
+  // Best-known events first, as people expect from a ticket site; sorting by
+  // date leads with restaurant offers and museum passes.
+  url.searchParams.set('sort', 'relevance,desc');
   try {
     const res = await cachedJson(url, apiKey, SEARCH_TTL);
     if (!res.ok) return none;

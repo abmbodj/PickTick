@@ -89,7 +89,7 @@ test('search sends the key, keyword, mapped type and date range', async () => {
     localStartDateTime: '2027-03-01T00:00:00,2027-03-31T23:59:59',
     countryCode: 'US',
     size: '20',
-    sort: 'date,asc',
+    sort: 'relevance,desc',
   });
   calls.length = 0;
   (await searchEvents(withKey, { q: 'comedy check', type: 'comedy' })).events;
