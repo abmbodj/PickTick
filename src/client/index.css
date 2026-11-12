@@ -461,7 +461,8 @@ h3 {
   transition: filter 500ms var(--ease-out-quart);
 }
 .tilt .tilt-card {
-  transform: perspective(900px) rotateX(calc(var(--ty) * -14deg)) rotateY(calc(var(--tx) * 14deg));
+  --lean: calc(14deg * (1 - var(--depth, 0) * 0.2)); /* tickets further back lean a little less */
+  transform: perspective(900px) rotateX(calc(var(--ty) * -1 * var(--lean))) rotateY(calc(var(--tx) * var(--lean)));
   transition: transform 500ms var(--ease-out-quart);
 }
 .tilt .tilt-layer {

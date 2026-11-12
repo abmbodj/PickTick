@@ -18,7 +18,7 @@ function tiltReset(ev: PointerEvent<HTMLElement>) {
 
 // The reservation as real tickets, one per seat: the event on the body, a tear-off stub with the price.
 // Several seats stack like tickets fanned in a hand; click, swipe or use the arrows to bring the next forward.
-// The front ticket tilts in 3D under the mouse. `large` is the ticket page's bigger version.
+// The whole stack tilts in 3D under the mouse, the back tickets a little less. `large` is the ticket page's bigger version.
 // The shape lives on inner elements so it doesn't fight ticket-print's clip-path.
 export default function TicketCard({ event: e, booking: b, large }: { event: EventDetail; booking: Booking; large?: boolean }) {
   const n = b.seatIds.length;
@@ -55,7 +55,7 @@ export default function TicketCard({ event: e, booking: b, large }: { event: Eve
               className="ticket-fan flex [grid-area:1/1]"
               style={{ zIndex: n - depth, '--depth': depth } as CSSProperties}
             >
-              <div className={`${depth === 0 ? 'tilt-card' : ''} ticket flex flex-1 rounded-lg bg-surface ${large ? '[--stub:7rem] sm:[--stub:9rem]' : '[--stub:7rem]'}`}>
+              <div className={`tilt-card ticket flex flex-1 rounded-lg bg-surface ${large ? '[--stub:7rem] sm:[--stub:9rem]' : '[--stub:7rem]'}`}>
                 <div className={`tilt-layer min-w-0 flex-1 ${large ? 'p-5 sm:p-7' : 'p-4'}`}>
                   <h2 className={`leading-tight font-bold [overflow-wrap:anywhere] ${large ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>{e.name}</h2>
                   <p className={`mt-1 text-muted ${large ? 'text-sm sm:text-base' : 'text-sm'}`}>
