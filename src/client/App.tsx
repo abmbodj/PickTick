@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, Route, Routes, useLocation, useMatch } from 'react-router';
+import { LogoMark } from './components/Logo';
 import Booking from './pages/Booking';
 import Event from './pages/Event';
 import Events from './pages/Events';
@@ -34,22 +35,13 @@ export default function App() {
     <div className="flex min-h-dvh flex-col">
       <header className="border-b border-line bg-bg">
         <div className={`${container} flex items-center justify-between py-2`}>
-          <Link to="/" aria-label="PickTick home" className="inline-flex min-h-11 items-center gap-2.5 rounded-sm">
-            {/* A ticket stub with a tick on it. */}
-            <svg viewBox="0 0 32 24" className="h-7 w-auto" aria-hidden="true">
-              <path
-                fill="var(--color-brand)"
-                d="M3 0h26a3 3 0 0 1 3 3v5a4 4 0 0 0 0 8v5a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3v-5a4 4 0 0 0 0-8V3a3 3 0 0 1 3-3z"
-              />
-              <path
-                d="M10 12.5l4 4 8-9"
-                fill="none"
-                stroke="var(--color-on-brand)"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          {/* The landing hero carries the logo itself, so the header's copy steps aside there. */}
+          <Link
+            to="/"
+            aria-label="PickTick home"
+            className={`inline-flex min-h-11 items-center gap-2.5 rounded-sm ${pathname === '/' ? 'invisible' : ''}`}
+          >
+            <LogoMark className="h-7 w-auto" />
             <span className="text-xl font-black tracking-tight [font-stretch:125%]">PickTick</span>
           </Link>
           <nav aria-label="Main" className="flex gap-5">

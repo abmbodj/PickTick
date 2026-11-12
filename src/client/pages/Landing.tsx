@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { container } from '../App';
 import EventThumb from '../components/EventThumb';
+import { LogoMark } from '../components/Logo';
 import { searchEvents } from '../lib/api';
 import { eventDay, eventTime } from '../lib/format';
 
@@ -64,40 +65,36 @@ export default function Landing() {
           aria-hidden="true"
           className="pointer-events-none absolute -inset-x-16 -bottom-20 h-40 bg-[linear-gradient(180deg,var(--color-velvet),var(--color-bg))] blur-2xl"
         />
-        <div className={`${container} relative grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]`}>
-          <div>
-            <h1 className="display text-[clamp(2.5rem,7vw,5rem)]">Good seats go fast. Be faster.</h1>
-            <p className="mt-5 max-w-[46ch] text-lg">
-              Find concerts, games and shows, watch the seat map change live, and hold your seats for two
-              minutes while you decide.
-            </p>
-            <form
-              role="search"
-              className="mt-7 flex max-w-xl flex-col gap-2 sm:flex-row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                navigate(q.trim() ? `/events?q=${encodeURIComponent(q.trim())}` : '/events');
-              }}
-            >
-              <label className="flex-1">
-                <span className="sr-only">Search events</span>
-                <input
-                  type="search"
-                  value={q}
-                  maxLength={100}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Artist, team, venue or city"
-                  className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base text-ink placeholder:text-muted"
-                />
-              </label>
-              <button className="btn-primary h-13">
-                Find events
-              </button>
-            </form>
-          </div>
-          <div className="mx-auto w-full max-w-md lg:max-w-none">
+        <div className={`${container} relative flex flex-col items-center gap-10 py-14 sm:gap-12 sm:py-20`}>
+          <h1 className="flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
+            <LogoMark className="h-[0.95em] w-auto" />
+            <span className="display">PickTick</span>
+            <span className="sr-only">: live seats for concerts, games and shows</span>
+          </h1>
+          <div className="w-full max-w-2xl">
             <HeroSeats />
           </div>
+          <form
+            role="search"
+            className="flex w-full max-w-xl flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              navigate(q.trim() ? `/events?q=${encodeURIComponent(q.trim())}` : '/events');
+            }}
+          >
+            <label className="flex-1">
+              <span className="sr-only">Search events</span>
+              <input
+                type="search"
+                value={q}
+                maxLength={100}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Artist, team, venue or city"
+                className="h-13 w-full rounded-md border-2 border-ink bg-bg px-4 text-base text-ink placeholder:text-muted"
+              />
+            </label>
+            <button className="btn-primary h-13">Find events</button>
+          </form>
         </div>
       </section>
 
