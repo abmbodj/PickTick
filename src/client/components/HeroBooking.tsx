@@ -124,7 +124,7 @@ export default function HeroBooking() {
       />
       <div className={`${container} relative flex flex-col items-center gap-8 py-14 sm:gap-10 sm:py-20`}>
         <h1 className="rise flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
-          <LogoMark className="h-[0.95em] w-auto" />
+          <LogoMark draw className="h-[0.95em] w-auto" />
           <span className="display">PickTick</span>
           <span className="sr-only">: live seats for concerts, games and shows</span>
         </h1>

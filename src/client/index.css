@@ -178,6 +178,11 @@ h3 {
   stroke-dasharray: 1;
   animation: draw 320ms var(--ease-out-quart) 120ms backwards;
 }
+/* The hero logo's tick writes itself in once the logo has risen into place. */
+.logo-tick {
+  stroke-dasharray: 1;
+  animation: draw 550ms var(--ease-out-quart) 380ms backwards;
+}
 .seat:focus-visible rect {
   stroke: var(--color-accent);
   stroke-width: 0.14;
