@@ -81,9 +81,16 @@ export default function Event() {
             ? 'That event does not exist.'
             : 'The event could not be loaded.'}
         </h1>
-        <Link to="/" className="mt-4 inline-block font-semibold text-accent underline">
-          Browse all events
-        </Link>
+        <div className="mt-4 flex gap-5">
+          {!(event.error instanceof ApiError && event.error.status === 404) && (
+            <button onClick={() => event.refetch()} className="font-semibold text-accent underline">
+              Try again
+            </button>
+          )}
+          <Link to="/events" className="font-semibold text-accent underline">
+            Browse all events
+          </Link>
+        </div>
       </main>
     );
 
@@ -145,7 +152,7 @@ export default function Event() {
     } catch (err) {
       setNotice({
         kind: 'error',
-        text: err instanceof Error ? err.message : 'Payment did not go through. Try again.',
+        text: err instanceof Error ? err.message : 'The reservation did not go through. Try again.',
       });
       setPaying(false);
     }
@@ -157,15 +164,34 @@ export default function Event() {
   }));
 
   return (
-    <main className="py-6 pb-44 lg:pb-10">
-      <Link to="/" className="text-sm font-semibold text-accent underline">
+    <main className="py-6 pb-10">
+      <Link to="/events" className="text-sm font-semibold text-accent underline">
         All events
       </Link>
-      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{e.name}</h1>
-      <p className="mt-1 text-muted">
-        {eventDay(e.startsAt)} at {eventTime(e.startsAt)} · {e.venueName}, {e.city}
-      </p>
-      <p className="mt-3 max-w-[65ch]">{e.description}</p>
+      <div className="mt-3 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
+        {e.imageUrl && (
+          <img
+            src={e.imageUrl}
+            alt=""
+            className="aspect-video w-full rounded-lg object-cover sm:w-64"
+          />
+        )}
+        <div>
+          <h1 className="display text-2xl sm:text-4xl">{e.name}</h1>
+          <p className="mt-2 text-muted">
+            {eventDay(e.startsAt)} at {eventTime(e.startsAt)} · {e.venueName}
+            {e.city && `, ${e.city}`}
+          </p>
+          {e.externalUrl && (
+            <p className="mt-2 text-sm">
+              <a href={e.externalUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline">
+                Buy real tickets for this event on Ticketmaster
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+      {e.description && <p className="mt-4 max-w-[65ch]">{e.description}</p>}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div>
@@ -212,10 +238,12 @@ export default function Event() {
         <aside className="flex flex-col gap-6">
           <CheckoutPanel seats={heldSeats} msLeft={left} paying={paying} onRelease={release} onPay={onPay} />
           <Stats stats={room.state?.stats ?? null} connected={room.connected} />
-          <section>
-            <h2 className="font-bold">{e.performerName}</h2>
-            <p className="mt-1 text-sm text-muted">{e.performerBlurb}</p>
-          </section>
+          {e.performerBlurb && (
+            <section>
+              <h2 className="font-bold">{e.performerName}</h2>
+              <p className="mt-1 text-sm text-muted">{e.performerBlurb}</p>
+            </section>
+          )}
         </aside>
       </div>
     </main>

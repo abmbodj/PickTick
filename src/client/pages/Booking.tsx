@@ -24,9 +24,9 @@ export default function Booking() {
       <main className="py-16">
         <h1 className="text-2xl font-bold">That booking is not available.</h1>
         <p className="mt-2 max-w-[60ch] text-muted">
-          Bookings can only be opened in the browser that made them, and a demo reset clears them all.
+          Reservations can only be opened in the browser that made them.
         </p>
-        <Link to="/" className="mt-4 inline-block font-semibold text-accent underline">
+        <Link to="/events" className="mt-4 inline-block font-semibold text-accent underline">
           Browse all events
         </Link>
       </main>
@@ -36,7 +36,7 @@ export default function Booking() {
   const b = booking.data;
   return (
     <main className="py-8">
-      <h1 className="text-3xl font-extrabold tracking-tight">You're in, {b.nickname}.</h1>
+      <h1 className="display text-3xl sm:text-4xl">You're in, {b.nickname}.</h1>
       <p className="mt-2 text-muted">
         {b.seatIds.length === 1 ? 'This seat is' : 'These seats are'} yours, and nobody else can book
         {b.seatIds.length === 1 ? ' it' : ' them'}.
@@ -48,7 +48,8 @@ export default function Booking() {
           <p className="mt-1 text-sm text-muted">
             {eventDay(e.startsAt)} at {eventTime(e.startsAt)}
             <br />
-            {e.venueName}, {e.city}
+            {e.venueName}
+            {e.city && `, ${e.city}`}
           </p>
         </div>
         <ul className="divide-y divide-line px-4">
@@ -59,16 +60,23 @@ export default function Booking() {
           ))}
         </ul>
         <div className="flex items-baseline justify-between border-t border-ink p-4">
-          <span className="text-sm text-muted">Total (pretend payment)</span>
+          <span className="text-sm text-muted">Total</span>
           <span className="font-mono text-xl font-bold tabular-nums">{money(b.totalCents)}</span>
         </div>
       </article>
 
-      <div className="mt-6 flex flex-wrap gap-4">
+      <p className="mt-3 max-w-md text-sm text-muted">
+        A reservation only. No payment was taken and no real ticket is issued.
+      </p>
+
+      <div className="mt-6 flex flex-wrap gap-5">
+        <Link to="/tickets" className="font-semibold text-accent underline">
+          My tickets
+        </Link>
         <Link to={`/event/${id}`} className="font-semibold text-accent underline">
           Back to the seat map
         </Link>
-        <Link to="/" className="font-semibold text-accent underline">
+        <Link to="/events" className="font-semibold text-accent underline">
           Browse all events
         </Link>
       </div>

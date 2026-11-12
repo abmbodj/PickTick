@@ -22,7 +22,7 @@ export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay 
         <p className="py-1 text-sm">
           <span className="font-semibold">Tap a seat to hold it.</span>{' '}
           <span className="text-muted">
-            You get {HOLD_MS / 60_000} minutes to pay, for up to {MAX_HOLDS} seats.
+            You get {HOLD_MS / 60_000} minutes to reserve, for up to {MAX_HOLDS} seats.
           </span>
         </p>
       ) : (
@@ -52,17 +52,17 @@ export default function CheckoutPanel({ seats, msLeft, paying, onRelease, onPay 
               <span className={`font-mono text-xl font-bold tabular-nums ${urgent ? 'text-danger' : ''}`}>
                 {clock(msLeft ?? 0)}
               </span>{' '}
-              <span className="text-muted">left to pay</span>
+              <span className="text-muted">left · total {money(total)}</span>
             </p>
             <button
               onClick={onPay}
               disabled={paying}
               className="h-12 rounded-md bg-brand px-6 text-base font-bold text-ink transition-colors duration-150 hover:bg-brand-strong active:bg-brand-strong disabled:cursor-wait disabled:opacity-60"
             >
-              {paying ? 'Paying…' : `Pay ${money(total)}`}
+              {paying ? 'Reserving…' : seats.length === 1 ? 'Reserve seat' : 'Reserve seats'}
             </button>
           </div>
-          <p className="mt-2 text-xs text-muted">Pretend payment. No card is asked for or charged.</p>
+          <p className="mt-2 text-xs text-muted">No payment is taken and no real ticket is issued.</p>
         </>
       )}
     </section>

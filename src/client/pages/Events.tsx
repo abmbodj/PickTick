@@ -1,17 +1,20 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useDeferredValue, useState } from 'react';
-import { Link } from 'react-router';
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { EVENT_TYPES } from '../../../shared/types';
 import { searchEvents, type SearchFilters } from '../lib/api';
-import { dayOfMonth, eventDay, eventTime, monthAbbrev } from '../lib/format';
+import EventThumb from '../components/EventThumb';
+import { eventDay, eventTime } from '../lib/format';
+import { useDebounced } from '../lib/useDebounced';
 
 const EMPTY: SearchFilters = { q: '', type: '', from: '', to: '' };
 const field =
   'h-11 w-full rounded-md border border-line bg-bg px-3 text-base text-ink placeholder:text-muted';
 
-export default function Home() {
-  const [filters, setFilters] = useState(EMPTY);
-  const deferred = useDeferredValue(filters);
+export default function Events() {
+  const [params] = useSearchParams();
+  const [filters, setFilters] = useState(() => ({ ...EMPTY, q: params.get('q') ?? '' }));
+  const deferred = useDebounced(filters, 300);
   const set = (patch: Partial<SearchFilters>) => setFilters((f) => ({ ...f, ...patch }));
   const filtered = Object.values(filters).some(Boolean);
 
@@ -23,7 +26,7 @@ export default function Home() {
 
   return (
     <main className="py-8">
-      <h1 className="text-3xl font-extrabold tracking-tight">Find an event</h1>
+      <h1 className="display text-3xl sm:text-4xl">Find an event</h1>
 
       <form role="search" className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]" onSubmit={(e) => e.preventDefault()}>
         <label className="col-span-2 block sm:col-span-1">
@@ -119,15 +122,13 @@ export default function Home() {
                   to={`/event/${e.id}`}
                   className="-mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
                 >
-                  <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-md bg-ink text-bg" aria-hidden="true">
-                    <span className="text-xs font-semibold uppercase">{monthAbbrev(e.startsAt)}</span>
-                    <span className="text-xl leading-none font-extrabold tabular-nums">{dayOfMonth(e.startsAt)}</span>
-                  </div>
+                  <EventThumb imageUrl={e.imageUrl} startsAt={e.startsAt} type={e.type} className="h-16 w-24" />
                   <div className="min-w-0 flex-1">
                     <h2 className="font-bold">{e.name}</h2>
                     <p className="text-sm text-muted">
                       <span className="sr-only">{eventDay(e.startsAt)}, </span>
-                      {eventTime(e.startsAt)} · {e.venueName}, {e.city}
+                      {eventTime(e.startsAt)} · {e.venueName}
+                      {e.city && `, ${e.city}`}
                     </p>
                   </div>
                   <span className="hidden rounded-full border border-line px-3 py-1 text-xs font-semibold capitalize sm:block">

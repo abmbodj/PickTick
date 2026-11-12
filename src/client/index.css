@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 
-/* Scene: phones in a lit classroom plus one washed-out projector, so a pure
-   white surface, near-black ink and seat states that differ by shape. */
+/* Scene: phones in daylight and the odd washed-out projector, so a pure white
+   surface, near-black ink and seat states that differ by shape. Voice: a
+   marquee box office. One family (Archivo); headlines use its wide cut. */
 @theme {
   --color-bg: oklch(1 0 0);
   --color-surface: oklch(0.965 0.004 80);
@@ -12,7 +13,7 @@
   --color-brand-strong: oklch(0.72 0.155 76);
   --color-accent: oklch(0.42 0.09 195);
   --color-danger: oklch(0.48 0.19 27);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
@@ -52,6 +53,33 @@ h3 {
   cursor: default;
 }
 
+/* Marquee headline: Archivo's expanded width, heavy. */
+.display {
+  font-stretch: 125%;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+}
+
+/* Landing hero: seats being taken, on a loop. Decorative. */
+@keyframes seat-taken {
+  0%,
+  35% {
+    fill: transparent;
+  }
+  45%,
+  90% {
+    fill: var(--color-ink);
+  }
+  100% {
+    fill: transparent;
+  }
+}
+.hero-seat {
+  fill: transparent;
+  animation: seat-taken 9s var(--ease-out-quart) infinite;
+}
+
 /* A counter flashes once when its value changes. */
 @keyframes bump {
   from {
@@ -78,5 +106,11 @@ h3 {
   .bump,
   .animate-pulse {
     animation: none;
+  }
+  .hero-seat {
+    animation: none;
+  }
+  .hero-seat[data-taken] {
+    fill: var(--color-ink);
   }
 }

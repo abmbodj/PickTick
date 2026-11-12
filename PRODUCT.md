@@ -9,18 +9,19 @@ product
 
 ## Users
 
-Students in a computer organization and architecture class, and the classmate
-presenting. They open the site on their own phones in a lit classroom while the
-presenter's screen is on a projector. They know system design vocabulary. Their
-job on the event page: grab a seat before someone else does, pay, and see what
-the system did about the people who lost.
+People looking for something to go to: concerts, games, shows. Mostly on a
+phone, often in a hurry because good seats are going. The site was first shown
+to a room of people using it at the same moment, so many visitors on one event
+is the normal case, not the edge case. The UI never mentions a class or a demo.
 
 ## Product Purpose
 
-A working ticket-booking site that makes its contention handling visible. Many
-people tap the same seat; exactly one gets it; everyone watches the seat map and
-the counters change live. Success is a room that tries to break it, cannot, and
-can see why.
+A ticket site where the seat map is live: you see seats taken as it happens,
+you hold yours for two minutes, and exactly one person ever gets a seat.
+Listings mix PickTick's own events with real events from Ticketmaster.
+Reservations are free and no real ticket is issued; the site says so once, at
+checkout and on the ticket, without making a theme of it. The landing page is
+the one brand-register surface; everything after it is product register.
 
 ## Brand Personality
 
@@ -32,6 +33,7 @@ sentences, no hype. The interface gets out of the way of the seat map.
 - Real ticketing sites' dark patterns: fake urgency banners, surprise fees,
   pop-ups over the seat map.
 - Dark "concert poster" themes with neon gradients; they wash out on a projector.
+- Ticketmaster's own look, logo or blue. PickTick is its own brand: honey, ink, a marquee wide grotesque.
 - Dashboards that turn four counters into giant hero numbers.
 
 ## Design Principles

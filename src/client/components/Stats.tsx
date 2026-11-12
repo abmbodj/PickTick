@@ -12,7 +12,7 @@ export default function Stats({ stats, connected }: { stats: StatsData | null; c
   return (
     <section aria-label="Live counters">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold">Behind the scenes</h2>
+        <h2 className="font-bold">Live seat activity</h2>
         <span className="flex items-center gap-2 text-sm font-semibold" role="status">
           <span
             className={`inline-block h-2.5 w-2.5 rounded-full ${connected ? 'bg-accent' : 'animate-pulse bg-danger'}`}
@@ -33,8 +33,7 @@ export default function Stats({ stats, connected }: { stats: StatsData | null; c
         ))}
       </dl>
       <p className="mt-2 text-sm text-muted">
-        One Durable Object owns every seat for this event and handles one request at a time. When two
-        people tap the same seat, the second request finds it taken and is counted as a conflict.
+        When two people tap the same seat, only the first gets it. The other is counted as a conflict.
       </p>
     </section>
   );

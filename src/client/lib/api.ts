@@ -1,4 +1,4 @@
-import type { Booking, EventDetail, EventSummary, EventType } from '../../../shared/types';
+import type { Booking, EventDetail, EventSummary, EventType, Ticket } from '../../../shared/types';
 
 export class ApiError extends Error {
   constructor(
@@ -47,3 +47,5 @@ export const payForHolds = (eventId: string, bookingId: string, nickname: string
 
 export const getBooking = (eventId: string, bookingId: string) =>
   api<Booking>(`/api/events/${encodeURIComponent(eventId)}/bookings/${encodeURIComponent(bookingId)}`);
+
+export const getTickets = () => api<Ticket[]>('/api/me/bookings');
