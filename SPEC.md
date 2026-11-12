@@ -1,6 +1,6 @@
 # PickTick: spec
 
-Status: draft, awaiting approval. Nothing is built yet.
+Status: approved and built. Live at https://picktick.pmbodj49.workers.dev
 Date: 2026-11-11
 
 ## 1. Intent
@@ -160,7 +160,7 @@ Reset:
 | `GET /api/events/:id/live` | WebSocket upgrade: snapshot, then seat and counter updates |
 | `POST /api/events/:id/holds` `{seatId, nickname}` | Hold a seat. `409` if taken, `422` if over the limit |
 | `DELETE /api/events/:id/holds/:seatId` | Release your own hold |
-| `POST /api/events/:id/bookings` | Confirm your live holds. `410` if expired |
+| `POST /api/events/:id/bookings` `{bookingId, nickname}` | Confirm your live holds. The browser makes one `bookingId` per checkout, so paying twice is one booking. `410` if expired |
 | `GET /api/events/:id/bookings/:bookingId` | Booking for the confirmation page, owner only |
 | `POST /api/admin/reset` | Reset demo state; requires secret |
 
@@ -222,3 +222,107 @@ can sell it out and fight over the last seats.
 - A Cloudflare account, and running `wrangler login` once; this decides the
   `workers.dev` subdomain.
 - Choosing the reset secret.
+
+---
+
+# Version 2: a public site with real events
+
+Date: 2026-11-11. Decided by the owner: real Ticketmaster events are bookable
+with PickTick's pretend checkout; "My tickets" is tied to the browser, with no
+accounts; the site must work before the API key exists. Everything else in this
+section marked **(my call)** was decided by Claude.
+
+## V2.1 What changes
+
+1. No "class demo" wording anywhere. PickTick presents as its own site.
+2. A landing page at `/`. Search moves to `/events`.
+3. "My tickets" at `/tickets`: every booking made in this browser.
+4. Real events from the Ticketmaster Discovery API v2 appear in search and on
+   the landing page, next to PickTick's own events, and can be booked the same
+   way.
+
+## V2.2 Honesty rules (not negotiable, my call)
+
+Real event names next to a checkout would let a visitor believe they hold a
+real ticket. So, without using the words "class" or "demo":
+
+- Checkout says, next to the button: no payment is taken and PickTick does not
+  issue real tickets. The button reads "Reserve", not "Pay".
+- Every confirmation and every entry in My tickets carries the same line.
+- Every Ticketmaster-sourced event page links to that event on Ticketmaster for
+  real tickets, and the footer credits Ticketmaster for event data.
+- No Ticketmaster logos or branding. PickTick never claims to be affiliated.
+
+Known risk the owner accepted: Ticketmaster's API terms forbid applications
+that replicate the Ticketmaster.com experience, so the key may be revoked. The
+site must keep working without it.
+
+## V2.3 Ticketmaster integration
+
+- Secret `TICKETMASTER_API_KEY`. When it is missing, or the API fails or is
+  rate limited, search returns PickTick's own events only and says nothing;
+  a Ticketmaster event page that cannot be loaded shows a "could not load"
+  state with a retry.
+- Event ids from Ticketmaster are prefixed `tm-`. PickTick's own ids never
+  start with `tm-`.
+- Search calls `GET /discovery/v2/events.json` with `keyword`, a
+  classification filter mapped from our four types, `startDateTime` /
+  `endDateTime`, `countryCode=US`, `size=20`, `sort=date,asc`. Results merge
+  with own events, soonest first. Events with no announced date are dropped.
+- Responses are cached at the edge (Cache API) for 5 minutes for search and 10
+  minutes for one event, to stay inside 5 requests per second and 5000 per day
+  and inside the terms' "reasonable periods". The search box waits 300 ms after
+  typing stops.
+- Start times use the event's local date and time, so they read as the venue's
+  wall clock, like PickTick's own events.
+- Ticketmaster has no seat-level data, so each Ticketmaster event gets a
+  generated house **(my call)**: three sections of 4 rows by 16 seats (192
+  seats), priced from the event's price range when present (max, midpoint,
+  min), else $120 / $75 / $45. The seat map is fixed the first time the event's
+  room is used.
+- Event images are shown from Ticketmaster's URLs, not copied.
+
+## V2.4 My tickets
+
+- The Durable Object stays the source of truth for a booking. After a
+  successful confirm, the Worker also writes one row to D1 table
+  `user_booking` (user id, booking id, event id, event name, start time, venue,
+  city, image URL, seats, total, created at). Reading a booking repairs a
+  missing row. The write is idempotent on booking id.
+- `GET /api/me/bookings` returns the caller's rows, soonest event first.
+- Reset also clears `user_booking`, and resets the rooms of every own event
+  plus every event that has a row there.
+- Clearing cookies loses access to tickets. The page says so.
+
+## V2.5 Pages
+
+- `/`: landing. What PickTick is, a search box that leads to `/events`, a row
+  of upcoming events, and the three steps of a booking (pick a seat, hold it
+  for two minutes, reserve).
+- `/events`: search (was `/`).
+- `/event/:id`: as before, plus the event image, and for Ticketmaster events
+  the link to real tickets. The counters stay, titled "Live seat activity".
+- `/tickets`: My tickets, with an empty state that leads to `/events`.
+- `/privacy`: what is stored (an anonymous id cookie, the name typed, the
+  bookings), that no payment data is collected, and where event data comes
+  from. Linked from the footer of every page, as the API terms require.
+
+## V2.6 Acceptance checks
+
+Automated:
+
+1. With no API key, search returns exactly the own events and never calls out.
+2. With a key and a stubbed API, search merges both sources by date, maps
+   fields correctly, drops undated events, and sends the mapped filters.
+3. A failing or rate-limited API gives own events only, not an error.
+4. `tm-` event detail maps name, start, venue, city, performer, image and
+   link, and has a 192-seat map priced from the price range.
+5. Holding and reserving a seat on a `tm-` event works end to end.
+6. After a booking, `GET /api/me/bookings` lists it for that browser only;
+   reading a booking whose row is missing restores the row.
+7. Reset empties My tickets.
+
+Manual: landing, events, tickets and privacy pages at phone and desktop width;
+the words "class" and "demo" appear nowhere in the UI.
+
+Not verified until the owner adds a key: the mapping against the live API.

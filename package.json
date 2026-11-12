@@ -1,0 +1,39 @@
+{
+  "name": "picktick",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "seed": "node scripts/make-seed.ts",
+    "contention": "node scripts/contention.ts"
+  },
+  "dependencies": {
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router": "^7",
+    "@tanstack/react-query": "^5",
+    "hono": "^4",
+    "zod": "^4",
+    "drizzle-orm": "^0.45"
+  },
+  "devDependencies": {
+    "vite": "*",
+    "@vitejs/plugin-react": "*",
+    "@cloudflare/vite-plugin": "*",
+    "wrangler": "^4",
+    "typescript": "*",
+    "tailwindcss": "^4",
+    "@tailwindcss/vite": "^4",
+    "vitest": "4.1.12",
+    "@cloudflare/vitest-pool-workers": "^0.23",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/node": "^22",
+    "@vitest/runner": "4.1.12",
+    "@vitest/snapshot": "4.1.12"
+  }
+}

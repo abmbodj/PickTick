@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "picktick",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "picktick",
+      "database_id": "7b4b23ec-0b5c-49d0-a7d6-81b76030aa34",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "EVENT_ROOM", "class_name": "EventRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EventRoom"] }]
+}
