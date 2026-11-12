@@ -280,6 +280,45 @@ h3 {
   transform: translateY(-4px);
 }
 
+/* Landing hero: dark holds across the top and longest on the right, velvet
+   blooms in from the left, and a soft almond glow sits low, below the seats.
+   Every layer's falloff follows a smoothstep curve (stops at
+   0, 10, 35, 65, 90, 100%), so the slope is zero where each starts and ends:
+   a straight ramp leaves a visible crease there. */
+.hero-mesh {
+  --glow: color-mix(in oklab, var(--color-brand) 26%, transparent);
+  --bloom: color-mix(in oklab, var(--color-velvet) 65%, var(--color-brand));
+  background:
+    radial-gradient(75% 95% at 100% 0%,
+      var(--color-bg) 35%,
+      color-mix(in oklab, var(--color-bg) 90%, transparent) 45%,
+      color-mix(in oklab, var(--color-bg) 65%, transparent) 55%,
+      color-mix(in oklab, var(--color-bg) 35%, transparent) 65%,
+      color-mix(in oklab, var(--color-bg) 10%, transparent) 75%,
+      transparent 85%),
+    radial-gradient(60% 11rem at 60% calc(100% - 11rem), /* ends exactly at the hero's bottom */
+      var(--glow),
+      color-mix(in oklab, var(--glow) 90%, transparent) 20%,
+      color-mix(in oklab, var(--glow) 65%, transparent) 40%,
+      color-mix(in oklab, var(--glow) 35%, transparent) 60%,
+      color-mix(in oklab, var(--glow) 10%, transparent) 80%,
+      transparent),
+    radial-gradient(60% 65% at 0% 38%,
+      var(--bloom) 0%,
+      color-mix(in oklab, var(--bloom) 90%, transparent) 16%,
+      color-mix(in oklab, var(--bloom) 65%, transparent) 32%,
+      color-mix(in oklab, var(--bloom) 35%, transparent) 48%,
+      color-mix(in oklab, var(--bloom) 10%, transparent) 64%,
+      transparent 80%),
+    linear-gradient(in oklab 180deg, var(--color-bg) 6rem, var(--color-velvet) 50%,
+      var(--color-velvet) calc(100% - 20rem),
+      color-mix(in oklab, var(--color-velvet) 90%, var(--color-bg)) calc(100% - 16rem),
+      color-mix(in oklab, var(--color-velvet) 65%, var(--color-bg)) calc(100% - 12rem),
+      color-mix(in oklab, var(--color-velvet) 35%, var(--color-bg)) calc(100% - 8rem),
+      color-mix(in oklab, var(--color-velvet) 10%, var(--color-bg)) calc(100% - 4rem),
+      var(--color-bg));
+}
+
 /* A picture that dissolves into the surface below it, so a title can sit on it. */
 .image-fade {
   position: absolute;

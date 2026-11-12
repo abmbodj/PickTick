@@ -131,14 +131,9 @@ export default function HeroBooking() {
 
   return (
     <section
-      className={`relative bg-[linear-gradient(180deg,var(--color-bg),var(--color-velvet)_70%)] ${searching || holding ? 'hero-active' : ''}`}
+      className={`hero-mesh relative ${searching || holding ? 'hero-active' : ''}`}
     >
-      {/* Blurs the hero's bottom edge into the page instead of ending on a hard line. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -inset-x-16 -bottom-20 h-40 bg-[linear-gradient(180deg,var(--color-velvet),var(--color-bg))] blur-2xl"
-      />
-      <div className={`${container} relative flex flex-col items-center gap-8 py-14 sm:gap-10 sm:py-20`}>
+      <div className={`${container} relative flex flex-col items-center gap-8 pt-14 pb-36 sm:gap-10 sm:pt-20 sm:pb-44`}>
         <h1 className="rise flex items-center gap-[0.3em] text-[clamp(2.5rem,9vw,5rem)]">
           <LogoMark draw className="h-[0.95em] w-auto" />
           <span className="display">PickTick</span>
