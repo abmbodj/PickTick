@@ -72,6 +72,7 @@ function ftsQuery(q: string): string | null {
 // ponytail: own events are few, so they are not paged; give them LIMIT/OFFSET
 // if the catalog grows past a screenful.
 const SUGGEST_BELOW = 10; // exact matches; fewer than this and suggestions are added
+const FILL_PERFORMERS = 3; // suggested performers whose full date list is looked up, one API call each
 
 export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<SearchPage> {
   const page = p.page ?? 0;
@@ -87,8 +88,20 @@ export async function searchEvents(env: CatalogEnv, p: SearchParams): Promise<Se
   const tm = await tmSearch(env.TICKETMASTER_API_KEY, p);
   const suggested =
     p.q && page === 0 && tm.events.length < SUGGEST_BELOW ? await tmSuggest(env.TICKETMASTER_API_KEY, p) : [];
-  const seen = new Set(tm.events.map((e) => e.id));
-  const events = [...tm.events, ...suggested.filter((e) => !seen.has(e.id))];
+  // A suggestion is a handful of one performer's dates (the API sends at most 5), so fill in
+  // each new performer's full list, as their artist page shows it. That answer is cached, so the
+  // artist page is free if they click through.
+  const known = new Set(tm.events.map((e) => e.performerId));
+  const fill = [...new Set(suggested.map((e) => e.performerId))]
+    .filter((id): id is string => id !== null && !known.has(id))
+    .slice(0, FILL_PERFORMERS);
+  const filled = (
+    await Promise.all(fill.map((id) => tmPerformerEvents(env.TICKETMASTER_API_KEY, id).catch(() => null)))
+  ).flatMap((r) => r?.events ?? []);
+  const fits = (e: EventSummary) =>
+    (!p.type || e.type === p.type) && (!p.from || e.startsAt.slice(0, 10) >= p.from) && (!p.to || e.startsAt.slice(0, 10) <= p.to);
+  const seen = new Set<string>();
+  const events = [...tm.events, ...filled.filter(fits), ...suggested].filter((e) => !seen.has(e.id) && seen.add(e.id));
   // Every card on the live site carries a picture, so an event without one is left out.
   return { events: events.filter((e) => e.imageUrl), page, totalPages: tm.totalPages };
 }

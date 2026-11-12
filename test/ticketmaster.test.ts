@@ -107,10 +107,14 @@ test('a repeated search is served from cache', async () => {
 });
 
 test('a partial word finds events through suggestions, after exact matches and without repeats', async () => {
+  // Its own performer, so filling in their dates caches nothing another test asks for.
+  const act = { _embedded: { venues: [{ name: 'Hall', city: { name: 'Austin' } }], attractions: [{ id: 'SUG', name: 'Sug Act' }] } };
   const calls = stubApi((url) =>
     url.pathname.endsWith('/suggest')
-      ? page([tmEvent({ id: 'exact' }), tmEvent({ id: 'partial', name: 'Mulaney: Live' })])
-      : page(url.searchParams.get('keyword') === 'mulan' ? [] : [tmEvent({ id: 'exact' })]),
+      ? page([tmEvent({ id: 'exact', ...act }), tmEvent({ id: 'partial', name: 'Mulaney: Live', ...act })])
+      : url.searchParams.has('attractionId')
+        ? page([])
+        : page(url.searchParams.get('keyword') === 'mulan' ? [] : [tmEvent({ id: 'exact', ...act })]),
   );
   const hits = (await searchEvents(withKey, { q: 'mulan' })).events;
   expect(hits.map((e) => e.id)).toEqual(['tm-exact', 'tm-partial']);
@@ -122,6 +126,19 @@ test('a partial word finds events through suggestions, after exact matches and w
   calls.length = 0;
   await searchEvents(withKey, { type: 'comedy', from: '2027-02-01' });
   expect(calls.some((c) => c.includes('/suggest?'))).toBe(false); // browsing without a word asks no suggestions
+});
+
+test("a suggested performer brings all their dates, not just the few suggestions carry", async () => {
+  const mulaney = { _embedded: { venues: [{ name: 'Hall', city: { name: 'Austin' } }], attractions: [{ id: 'MUL', name: 'John Mulaney' }] } };
+  const calls = stubApi((url) => {
+    if (url.pathname.endsWith('/suggest')) return page([tmEvent({ id: 's1', ...mulaney })]);
+    if (url.searchParams.get('attractionId') === 'MUL')
+      return page(['s1', 'd2', 'd3'].map((id, i) => tmEvent({ id, ...mulaney, dates: { start: { localDate: `2027-02-0${i + 1}` } } })));
+    return page([]);
+  });
+  const [group] = (await SELF.fetch('https://x/api/events/search?q=mulanes').then((r) => r.json()) as { groups: { name: string; eventCount: number }[] }).groups;
+  expect(group).toMatchObject({ name: 'John Mulaney', eventCount: 3 });
+  expect(calls.filter((c) => c.includes('attractionId=MUL'))).toHaveLength(1);
 });
 
 test('when the API rate-limits, it is asked once more, then an older answer is served', async () => {
