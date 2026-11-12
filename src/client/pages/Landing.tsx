@@ -71,7 +71,7 @@ export default function Landing() {
             <span className="display">PickTick</span>
             <span className="sr-only">: live seats for concerts, games and shows</span>
           </h1>
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-md">
             <HeroSeats />
           </div>
           <form
